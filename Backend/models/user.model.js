@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     select: false,    // this ensures that password is hidden by default whenever a user query is made
   },
-  // this is used for live-tracking of captain and user
+  // this is used for live-tracking of user
   socketId: {
     type: String,
   },
