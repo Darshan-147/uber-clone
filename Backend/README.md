@@ -374,3 +374,132 @@ curl -X POST http://localhost:4000/api/drivers/register \
     }
   }
   ```
+
+  # Driver Profile Endpoint
+
+  ## Endpoint
+
+  `GET /api/drivers/profile`
+
+  ## Description
+
+  Retrieves the profile information of the currently authenticated driver.
+
+  ## Authorization
+
+  Requires a valid JWT token in the Authorization header:
+  `Authorization: Bearer <token>`
+
+  ## Responses
+
+  ### Success
+
+  - **Status Code**: `200 OK`
+  - **Response Body**:
+    ```json
+    {
+      "_id": "60d0fe4f5311236168a109ca",
+      "fullname": {
+        "firstname": "John",
+        "lastname": "Doe"
+      },
+      "email": "john.doe@example.com",
+      "vehicle": {
+        "color": "black", 
+        "plate": "ABC123",
+        "capacity": 4,
+        "vehicleType": "car"
+      },
+      "socketId": null
+    }
+    ```
+
+  ### Unauthorized
+
+  - **Status Code**: `401 Unauthorized`
+  - **Response Body**:
+    ```json
+    {
+      "message": "Authorization token required"
+    }
+    ```
+
+  ## Example Request
+  ```bash
+  
+  curl -X GET http://localhost:4000/api/drivers/profile \
+  -H "Authorization: Bearer your_jwt_token"
+  ```
+
+  ## Example Response
+
+  ```json
+  {
+    "_id": "60d0fe4f5311236168a109ca",
+    "fullname": {
+      "firstname": "John",
+      "lastname": "Doe"
+    },
+    "email": "john.doe@example.com",
+    "vehicle": {
+      "color": "black",
+      "plate": "ABC123",
+      "capacity": 4,
+      "vehicleType": "car"
+    },
+    "socketId": null
+  }
+  ```
+
+  # Driver Logout Endpoint
+
+  ## Endpoint
+
+  `GET /api/drivers/logout`
+
+  ## Description
+
+  Logs out the currently authenticated driver by clearing the authentication cookie and blacklisting the JWT token to prevent reuse.
+
+  ## Authorization
+
+  Requires a valid JWT token either in:
+  - Cookie: `token=<jwt_token>`
+  - Authorization header: `Authorization: Bearer <jwt_token>`
+
+  ## Responses
+
+  ### Success
+
+  - **Status Code**: `200 OK`
+  - **Response Body**:
+    ```json
+    {
+      "message": "Logged Out Successfully"
+    }
+    ```
+
+  ### Unauthorized
+
+  - **Status Code**: `401 Unauthorized`
+  - **Response Body**:
+    ```json
+    {
+      "message": "Authorization token required" 
+    }
+    ```
+
+  ## Example Request
+
+  ```bash
+  curl -X GET http://localhost:4000/api/drivers/logout \
+  -H "Authorization: Bearer your_jwt_token"
+  ```
+
+  ## Example Response
+
+  ```json
+  {
+    "message": "Logged Out Successfully"
+  }
+  ```
