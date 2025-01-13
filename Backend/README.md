@@ -245,10 +245,132 @@ curl -X GET http://localhost:4000/api/users/logout \
 
 ## Example Response
 
-#### Logout
-
 ```json
 {
     "message": "Logged Out"
 }
 ```
+
+# Driver Registration Endpoint
+
+## Endpoint
+
+`POST /api/drivers/register`
+
+## Description
+
+This endpoint is used to register a new driver. It validates the input data and creates a new driver in the database.
+
+## Request Body
+
+The request body should be a JSON object with the following structure:
+
+```json
+{
+  "fullname": {
+    "firstname": "John",
+    "lastname": "Doe"
+  },
+  "email": "john.doe@example.com",
+  "password": "yourpassword",
+  "vehicle": {
+    "color": "black",
+    "plate": "ABC123",
+    "capacity": 4,
+    "vehicleType": "car"
+  }
+}
+```
+
+### Validation Rules
+
+- `fullname.firstname`: Must be at least 3 characters long
+- `email`: Must be a valid email address
+- `password`: Must be at least 6 characters long
+- `vehicle.color`: Must be at least 3 characters long
+- `vehicle.plate`: Must be at least 3 characters long
+- `vehicle.capacity`: Must be at least 1
+- `vehicle.vehicleType`: Must be one of: "car", "motorcycle", "auto"
+
+## Responses
+
+### Success
+
+- **Status Code**: `201 Created`
+- **Response Body**:
+  ```json
+  {
+    "driver": {
+      "_id": "driver_id",
+      "fullname": {
+        "firstname": "John",
+        "lastname": "Doe"
+      },
+      "email": "john.doe@example.com",
+      "vehicle": {
+        "color": "black",
+        "plate": "ABC123",
+        "capacity": 4,
+        "vehicleType": "car"
+      }
+    }
+  }
+  ```
+
+### Validation Error
+
+- **Status Code**: `400 Bad Request`
+- **Response Body**:
+  ```json
+  {
+    "errors": [
+      {
+        "msg": "First name must be at least 3 characters long",
+        "param": "fullname.firstname",
+        "location": "body"
+      }
+    ]
+  }
+  ```
+
+## Example Request
+
+```bash
+curl -X POST http://localhost:4000/api/drivers/register \
+-H "Content-Type: application/json" \
+-d '{
+  "fullname": {
+    "firstname": "John",
+    "lastname": "Doe"
+  },
+  "email": "john.doe@example.com",
+  "password": "password123",
+  "vehicle": {
+    "color": "black",
+    "plate": "ABC123",
+    "capacity": 4,
+    "vehicleType": "car"
+  }
+}'
+```
+
+## Example Response
+
+```json
+  {
+    "driver": {
+      "_id": "driver_id",
+      "fullname": {
+        "firstname": "John",
+        "lastname": "Doe"
+      },
+      "email": "john.doe@example.com",
+      "vehicle": {
+        "color": "black",
+        "plate": "ABC123",
+        "capacity": 4,
+        "vehicleType": "car"
+      }
+    }
+  }
+  ```
