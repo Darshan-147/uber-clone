@@ -1,0 +1,79 @@
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+
+const UserLogin = () => {
+  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [userData, setUserData] = useState({});
+
+  const submitHandler = (e) => {
+    e.preventDefault();
+
+    setUserData({
+      email: email,
+      password: password,
+    });
+    console.log(email, password);
+    setEmail("");
+    setPassword("");
+  };
+
+  return (
+    <div className="p-7 h-screen flex flex-col justify-between">
+      <div>
+        <img
+          className="w-14 mb-10"
+          src="https://static-00.iconduck.com/assets.00/uber-icon-2048x2048-1c9pt96a.png"
+        ></img>
+        <form
+          onSubmit={(e) => {
+            submitHandler(e);
+          }}
+        >
+          <h3 className="text-xl mb-2">Yo, what's your email?</h3>
+          <input
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+            }}
+            type="email"
+            className="bg-gray-200 rounded px-4 py-2 mb-7 border w-full text-lg placeholder:text-base"
+            placeholder="email@example.com"
+            required
+          />
+          <h3 className="text-xl mb-2">Enter password</h3>
+          <input
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+            }}
+            type="password"
+            className="bg-gray-200 rounded px-4 py-2 mb-7 border w-full text-lg placeholder:text-base"
+            placeholder="password"
+            required
+          />
+          <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-7 border w-full text-lg">
+            Login
+          </button>
+        </form>
+        <p>
+          New here?{" "}
+          <Link to="/signup" className="text-blue-700">
+            Create Account
+          </Link>{" "}
+        </p>
+      </div>
+      <div>
+        <Link
+          to="/driver-login"
+          className="bg-green-600 text-white font-semibold rounded px-4 py-2 mb-7 border w-full flex justify-center text-lg"
+        >
+          Sign In as Driver
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default UserLogin;
