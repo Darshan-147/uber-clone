@@ -13,7 +13,7 @@ const DriverSignup = () => {
     e.preventDefault();
 
     setDriverData({
-      userName: {
+      fullName: {
         firstName: firstName,
         lastName: lastName,
       },
