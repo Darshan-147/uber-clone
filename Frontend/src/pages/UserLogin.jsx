@@ -14,7 +14,8 @@ const UserLogin = () => {
       email: email,
       password: password,
     });
-    console.log(email, password);
+    console.log(userData);
+    // reset the form after login
     setEmail("");
     setPassword("");
   };
@@ -31,7 +32,7 @@ const UserLogin = () => {
             submitHandler(e);
           }}
         >
-          <h3 className="text-xl mb-2">Yo, what's your email?</h3>
+          <h3 className="text-lg mb-2">Yo, what's your email?</h3>
           <input
             value={email}
             onChange={(e) => {
@@ -42,7 +43,7 @@ const UserLogin = () => {
             placeholder="email@example.com"
             required
           />
-          <h3 className="text-xl mb-2">Enter password</h3>
+          <h3 className="text-lg mb-2">Enter password</h3>
           <input
             value={password}
             onChange={(e) => {
