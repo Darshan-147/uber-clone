@@ -86,6 +86,6 @@ driverSchema.statics.hashPassword = async function (password) {
   return await bcrypt.hash(password, 10);
 };
 
-const driverModel = mongoose.model("driver", driverSchema);
+const driverModel = mongoose.model("drivers", driverSchema);
 
 module.exports = driverModel;

@@ -1,20 +1,39 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { UserDataContext } from "../context/UserContext";
 
 const UserLogin = () => {
   // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [userData, setUserData] = useState({});
+  const [email, setEmail] = useState("dashu@gmail.com");
+  const [password, setPassword] = useState("123456");
 
-  const submitHandler = (e) => {
+  const navigate = useNavigate();
+
+  const { user, setUser } = useContext(UserDataContext);
+
+  const submitHandler = async (e) => {
     e.preventDefault();
 
-    setUserData({
+    const existingUser = {
       email: email,
       password: password,
-    });
-    console.log(userData);
+    };
+
+    // To send the response from frontend to backend
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/login`,
+      existingUser
+    );
+
+    if (response.status === 200) {
+      const data = response.data;
+
+      setUser(data.user);
+      localStorage.setItem('token',data.token)
+      navigate("/home");
+    }
+
     // reset the form after login
     setEmail("");
     setPassword("");

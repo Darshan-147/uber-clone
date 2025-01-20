@@ -1,21 +1,39 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { DriverDataContext } from "../context/DriverContext";
+import axios from "axios";
 
 const DriverLogin = () => {
   // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [driverData, setDriverData] = useState({});
+  const [email, setEmail] = useState("testd@gmail.com");
+  const [password, setPassword] = useState("123456");
 
-  const submitHandler = (e) => {
+  const navigate = useNavigate();
+
+  const {driver, setDriver} = useContext(DriverDataContext);
+
+  const submitHandler = async (e) => {
     e.preventDefault();
 
-    setDriverData({
+    const existingDriver = {
       email: email,
       password: password,
-    });
-    // I'll remove all this clgs after project completion
-    console.log(driverData);
+    };
+    
+    // To send the response from frontend to backend
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/login`,
+      existingDriver
+    );
+
+    if (response.status === 200) {
+      const data = response.data;
+
+      setDriver(data.driver);
+      localStorage.setItem('token',data.token)
+      navigate("/driver-home");
+    }
+
     // reset the form after login
     setEmail("");
     setPassword("");

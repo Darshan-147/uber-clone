@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { UserDataContext } from "../context/UserContext";
 
 const UserSignup = () => {
   // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
@@ -7,20 +9,35 @@ const UserSignup = () => {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userData, setUserData] = useState({});
 
-  const submitHandler = (e) => {
+  const navigate = useNavigate();
+
+  const { user, setUser } = useContext(UserDataContext);
+
+  const submitHandler = async (e) => {
     e.preventDefault();
 
-    setUserData({
-      fullName: {
-        firstName: firstName,
-        lastName: lastName,
+    const newUser = {
+      fullname: {
+        firstname: firstName,
+        lastname: lastName,
       },
       email: email,
       password: password,
-    });
-    console.log(userData);
+    };
+    // To send the response from frontend to backend
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/register`,
+      newUser
+    );
+
+    if (response.status === 201) {
+      const data = response.data;
+
+      setUser(data.user);
+      localStorage.setItem('token',data.token)
+      navigate("/home");
+    }
 
     // reset the form after signup
     setFirstName("");
@@ -87,7 +104,7 @@ const UserSignup = () => {
             required
           />
           <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-5 border w-full text-lg">
-            Sign up
+            Create User Account
           </button>
         </form>
         <p>

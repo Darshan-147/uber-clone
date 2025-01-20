@@ -4,16 +4,16 @@ export const UserDataContext = createContext();
 
 // Context APIs are used for data centralization
 const UserContext = ({ children }) => {
-  const [user,setUser] = useState({
-    fullName:{
-        firstName:'',
-        lastName:''
+  const [user, setUser] = useState({
+    fullName: {
+      firstName: "",
+      lastName: "",
     },
-    email:''
-  })
+    email: "",
+  });
   return (
     <div>
-      <UserDataContext.Provider value={[user,setUser]}>
+      <UserDataContext.Provider value={{user, setUser}}>
         {children}
       </UserDataContext.Provider>
     </div>

@@ -1,32 +1,63 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { DriverDataContext } from "../context/DriverContext";
+import axios from "axios";
 
 const DriverSignup = () => {
-  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [driverData, setDriverData] = useState({});
 
-  const submitHandler = (e) => {
+  const navigate = useNavigate()
+  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
+  const [firstName, setFirstName] = useState("Test");
+  const [lastName, setLastName] = useState("Driver");
+  const [email, setEmail] = useState("testd@gmail.com");
+  const [password, setPassword] = useState("123456");
+  const [vehicleColor, setVehicleColor] = useState("Purple");
+  const [vehiclePlate, setVehiclePlate] = useState("GJ 01 NY 2258");
+  const [vehicleCapacity, setVehicleCapacity] = useState("3");
+  const [vehicleType, setVehicleType] = useState("");
+
+  const { driver, setDriver } = useContext(DriverDataContext);
+
+  const submitHandler = async (e) => {
     e.preventDefault();
 
-    setDriverData({
-      fullName: {
-        firstName: firstName,
-        lastName: lastName,
+    const newDriver = {
+      fullname: {
+        firstname: firstName,
+        lastname: lastName,
       },
       email: email,
       password: password,
-    });
-    console.log(driverData);
+      vehicle: {
+        color: vehicleColor,
+        plate: vehiclePlate,
+        capacity: vehicleCapacity,
+        vehicleType: vehicleType,
+      },
+    };
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/register`,
+      newDriver
+    );
+
+    if (response.status === 201) {
+      const data = response.data;
+
+      setDriver(data.driver);
+      localStorage.setItem('token',data.token)
+      navigate("/driver-home");
+    }
 
     // reset the form after signup
     setFirstName("");
     setLastName("");
     setEmail("");
     setPassword("");
+    setVehicleColor("");
+    setVehiclePlate("");
+    setVehicleCapacity("");
+    setVehicleType("");
   };
 
   return (
@@ -86,8 +117,48 @@ const DriverSignup = () => {
             placeholder="password"
             required
           />
+
+          <h3 className="text-lg mb-2">Vehicle Color</h3>
+          <input
+            value={vehicleColor}
+            onChange={(e) => setVehicleColor(e.target.value)}
+            type="text"
+            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
+            placeholder="Enter vehicle color"
+            required
+          />
+          <h3 className="text-lg mb-2">Vehicle Plate Number</h3>
+          <input
+            value={vehiclePlate}
+            onChange={(e) => setVehiclePlate(e.target.value)}
+            type="text"
+            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
+            placeholder="Enter plate number"
+            required
+          />
+          <h3 className="text-lg mb-2">Vehicle Capacity</h3>
+          <input
+            value={vehicleCapacity}
+            onChange={(e) => setVehicleCapacity(e.target.value)}
+            type="number"
+            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
+            placeholder="Enter vehicle capacity"
+            required
+          />
+          <h3 className="text-lg mb-2">Vehicle Type</h3>
+          <select
+            value={vehicleType}
+            onChange={(e) => setVehicleType(e.target.value)}
+            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg"
+            required
+          >
+            <option value="">Select vehicle type</option>
+            <option value="car">Car</option>
+            <option value="auto">Auto</option>
+            <option value="motorcycle">Motorcycle</option>
+          </select>
           <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-5 border w-full text-lg">
-            Sign up
+            Create Driver Account
           </button>
         </form>
         <p>
