@@ -4,13 +4,13 @@ import { DriverDataContext } from "../context/DriverContext";
 import axios from "axios";
 
 const DriverLogin = () => {
-  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
+  // Two way binding means jo value (e.g.email) me yaha declare kar raha hu wahi value me input tag ke undar use karunga. This is necessary because react won't understand what I am typing otherwise.
   const [email, setEmail] = useState("testd@gmail.com");
   const [password, setPassword] = useState("123456");
 
   const navigate = useNavigate();
 
-  const {driver, setDriver} = useContext(DriverDataContext);
+  const { driver, setDriver } = useContext(DriverDataContext);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -19,7 +19,7 @@ const DriverLogin = () => {
       email: email,
       password: password,
     };
-    
+
     // To send the response from frontend to backend
     const response = await axios.post(
       `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/login`,
@@ -30,7 +30,7 @@ const DriverLogin = () => {
       const data = response.data;
 
       setDriver(data.driver);
-      localStorage.setItem('token',data.token)
+      localStorage.setItem("token", data.token);
       navigate("/driver-home");
     }
 
@@ -53,7 +53,7 @@ const DriverLogin = () => {
         >
           <h3 className="text-lg mb-2">Yo, what's your email?</h3>
           <input
-            value={email}
+            value={email}   // Two way binding
             onChange={(e) => {
               setEmail(e.target.value);
             }}
@@ -64,7 +64,7 @@ const DriverLogin = () => {
           />
           <h3 className="text-lg mb-2">Enter password</h3>
           <input
-            value={password}
+            value={password}   // Two way binding
             onChange={(e) => {
               setPassword(e.target.value);
             }}
