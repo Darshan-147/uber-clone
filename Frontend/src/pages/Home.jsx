@@ -3,14 +3,17 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import "remixicon/fonts/remixicon.css";
 import LocationSearchPanel from "../components/LocationSearchPanel";
+import VehiclePanel from "../components/VehiclePanel";
 
 const Home = () => {
   const [pickup, setPickup] = useState("");
   const [destination, setDestination] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const panelRef = useRef(null);
+  const [vehiclePanelOpen, setVehiclePanelOpen] = useState(false);
+  const vehiclePanelRef = useRef(null);
   const panelCloseRef = useRef(null);
-  const [vehiclePanel, setVehiclePanel] = useState(false);
+  
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -37,6 +40,19 @@ const Home = () => {
       });
     }
   }, [panelOpen]);
+
+  useGSAP(() => {
+    if (vehiclePanelOpen) {
+      gsap.to(vehiclePanelRef.current, {
+        transform: "translateY(0%)",
+      });
+    } else {
+      gsap.to(vehiclePanelRef.current, {
+        transform: "translateY(100%)",
+      });
+    }
+  }, [vehiclePanelOpen]);
+
   return (
     <div className="relative h-screen overflow-hidden">
       <img
@@ -57,7 +73,9 @@ const Home = () => {
           <h4 className="font-semibold text-3xl">Find a trip</h4>
           <h5
             ref={panelCloseRef}
-            onClick={() => setPanelOpen(false)}
+            onClick={() => {
+              setPanelOpen(false);
+            }}
             className="absolute right-5 top-5 font-semibold text-3xl opacity-0"
           >
             <i className="ri-arrow-down-wide-line"></i>
@@ -95,41 +113,20 @@ const Home = () => {
           </form>
         </div>
         <div ref={panelRef} className="h-0 bg-white">
-          <LocationSearchPanel vehiclePanel={vehiclePanel} setVehiclePanel={setVehiclePanel}/>
+          <LocationSearchPanel
+            setPanelOpen={setPanelOpen}
+            setVehiclePanelOpen={setVehiclePanelOpen}
+          />
         </div>
       </div>
       {/* Vehicles section */}
-      <div className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 translate-y-full">
-        <h3 className="text-2xl font-semibold mb-5">Choose a vehicle</h3>
-
-        <div className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between">
-          <img className="h-10 w-16" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s" alt="UberGo" />
-              <div className="ml-2 w-1/2"> 
-                <h4 className="font-medium text-base">UberGo <span><i className="ri-user-3-fill"></i>4</span></h4>
-                <h5 className="font-medium text-sm">2 mins away</h5>
-                <p className="font-normal text-xs text-gray-500">Affordable, compact rides</p>
-              </div>
-            <h2 className="font-semibold text-xl">₹120.21</h2>
-        </div>
-        <div className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between">
-          <img className="h-10 w-16" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS50dWc9jVI7sEuKrjwkvIKFFShG0hab9uA4A&s" alt="MBenz" />
-              <div className="ml-2 w-1/2"> 
-                <h4 className="font-medium text-base">Mercedes Benz <span><i className="ri-user-3-fill"></i>5</span></h4>
-                <h5 className="font-medium text-sm">5 mins away</h5>
-                <p className="font-normal text-xs text-gray-500">Luxurious ride for luxurious people</p>
-              </div>
-            <h2 className="font-semibold text-xl">₹520.67</h2>
-        </div>
-        <div className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between">
-          <img className="h-10 w-14" src="https://w1.pngwing.com/pngs/381/835/png-transparent-yamaha-logo-car-decal-motorcycle-sticker-sport-bike-yamaha-yzfr1-bicycle.png" alt="Bike" />
-              <div className="ml-2 w-1/2"> 
-                <h4 className="font-medium text-base">Motorcycle <span><i className="ri-user-3-fill"></i>1</span></h4>
-                <h5 className="font-medium text-sm">1 min away</h5>
-                <p className="font-normal text-xs text-gray-500">For bike lovers</p>
-              </div>
-            <h2 className="font-semibold text-xl">₹70.32</h2>
-        </div>
-
+      <div
+        ref={vehiclePanelRef}
+        className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 translate-y-full"
+      >
+        <VehiclePanel
+          setVehiclePanelOpen={setVehiclePanelOpen}
+        />
       </div>
     </div>
   );
