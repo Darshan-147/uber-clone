@@ -9,8 +9,8 @@ const DriverSignup = () => {
   // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
   const [firstName, setFirstName] = useState("Test");
   const [lastName, setLastName] = useState("Driver");
-  const [email, setEmail] = useState("testd@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("test_email@gmail.com");
+  const [password, setPassword] = useState("test_driver");
   const [vehicleColor, setVehicleColor] = useState("Purple");
   const [vehiclePlate, setVehiclePlate] = useState("GJ 01 NY 2258");
   const [vehicleCapacity, setVehicleCapacity] = useState("3");

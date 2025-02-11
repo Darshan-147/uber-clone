@@ -1,7 +1,6 @@
 import React from "react";
 
 const LocationSearchPanel = (props) => {
-  console.log(props);
   // sample locations array
   const locations = [
     "Sector-72, Bhaukali Nagari, Sherpur, Gujarat - 385421",
@@ -14,9 +13,10 @@ const LocationSearchPanel = (props) => {
 
       {locations.map(function (element, index) {
         return (
-          <div key={index}
+          <div
+            key={index}
             onClick={() => {
-              props.setVehiclePanelOpen(true);
+              props.setVehiclePanel(true);
               props.setPanelOpen(false);
             }}
             className="flex items-center gap-4 border-2 border-white active:border-black rounded-xl p-3"

@@ -5,14 +5,19 @@ const VehiclePanel = (props) => {
     <div>
       <h5
         onClick={() => {
-          props.setVehiclePanelOpen(false);
+          props.setVehiclePanel(false);
         }}
-        className="absolute w-full text-center top-0 text-gray-400 font-semibold text-3xl"
+        className="absolute w-full text-center top-0 text-gray-300 font-semibold text-3xl"
       >
         <i className="ri-arrow-down-wide-line"></i>
       </h5>
       <h3 className="text-2xl font-semibold mb-5">Choose a vehicle</h3>
-      <div className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between">
+      <div
+        onClick={() => {
+          props.setConfirmRidePanel(true);
+        }}
+        className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between"
+      >
         <img
           className="h-10 w-16"
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s"
@@ -32,7 +37,12 @@ const VehiclePanel = (props) => {
         </div>
         <h2 className="font-semibold text-xl">₹120.21</h2>
       </div>
-      <div className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between">
+      <div
+        onClick={() => {
+          props.setConfirmRidePanel(true);
+        }}
+        className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between"
+      >
         <img
           className="h-10 w-16"
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS50dWc9jVI7sEuKrjwkvIKFFShG0hab9uA4A&s"
@@ -52,7 +62,12 @@ const VehiclePanel = (props) => {
         </div>
         <h2 className="font-semibold text-xl">₹520.67</h2>
       </div>
-      <div className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between">
+      <div
+        onClick={() => {
+          props.setConfirmRidePanel(true);
+        }}
+        className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between"
+      >
         <img
           className="h-10 w-14"
           src="https://w1.pngwing.com/pngs/381/835/png-transparent-yamaha-logo-car-decal-motorcycle-sticker-sport-bike-yamaha-yzfr1-bicycle.png"

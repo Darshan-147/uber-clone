@@ -1,28 +1,27 @@
 import React from "react";
 
-const ConfirmRide = (props) => {
+const WaitingForDriver = (props) => {
   return (
     <div>
       <h5
         onClick={() => {
-          props.setConfirmRidePanel(false);
+          props.setWaitingForDriver(true);
         }}
         className="absolute w-full text-center top-0 text-gray-300 font-semibold text-3xl"
       >
         <i className="ri-arrow-down-wide-line"></i>
       </h5>
-      <h3 className="text-2xl font-semibold mb-5">Confirm Your Ride</h3>
 
-      <div className="flex items-center justify-between">
+      <div>
         <img
           className="h-24"
           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s"
           alt="UberGo"
         />
-        <div className="text-right">
-          <h2 className="text-lg font-bold">Ramu</h2>
-          <h4 className="text-xl font-semibold -mt-2 -mb-1">GJ 01 NY 2258</h4>
-          <p className="text-sm text-gray-600">Jaguar</p>
+        <div>
+          <h2>Ramu</h2>
+          <h4>GJ 01 NY 2258</h4>
+          <p>Jaguar</p>
         </div>
       </div>
 
@@ -38,18 +37,9 @@ const ConfirmRide = (props) => {
             <i className="ri-bank-card-2-fill"></i>Rokda
           </div>
         </div>
-        <button
-          onClick={() => {
-            props.setVehicleFound(true);
-            props.setConfirmRidePanel(false);
-          }}
-          className="bg-green-400 p-3 rounded-lg w-full font-semibold text-white"
-        >
-          Confirm
-        </button>
       </div>
     </div>
   );
 };
 
-export default ConfirmRide;
+export default WaitingForDriver;
