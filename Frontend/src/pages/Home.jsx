@@ -6,7 +6,6 @@ import LocationSearchPanel from "../components/LocationSearchPanel";
 import VehiclePanel from "../components/VehiclePanel";
 import ConfirmRide from "../components/ConfirmRide";
 import LookingForDriver from "../components/LookingForDriver";
-import WaitingForDriver from "../components/WaitingForDriver";
 
 const Home = () => {
   const [pickup, setPickup] = useState("");
@@ -182,9 +181,6 @@ const Home = () => {
       <div ref={vehicleFoundRef} className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 pt-12 translate-y-full">
         <LookingForDriver setVehicleFound={setVehicleFound}/>
       </div>
-      {/* <div ref={waitingForDriverRef} className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 pt-12 ">
-        <WaitingForDriver setWaitingForDriver={setWaitingForDriver}/>
-      </div> */}
     </div>
   );
 };

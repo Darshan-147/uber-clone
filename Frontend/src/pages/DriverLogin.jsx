@@ -5,8 +5,8 @@ import axios from "axios";
 
 const DriverLogin = () => {
   // Two way binding means jo value (e.g.email) me yaha declare kar raha hu wahi value me input tag ke undar use karunga. This is necessary because react won't understand what I am typing otherwise.
-  const [email, setEmail] = useState("test_email@gmail.com");
-  const [password, setPassword] = useState("test_driver");
+  const [email, setEmail] = useState("driver@gmail.com");
+  const [password, setPassword] = useState("Khataro");
 
   const navigate = useNavigate();
 

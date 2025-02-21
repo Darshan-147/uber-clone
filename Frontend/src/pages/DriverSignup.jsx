@@ -169,7 +169,7 @@ const DriverSignup = () => {
         </p>
       </div>
       <div>
-        <p className="text-[11px] leading-tight">
+        <p className="text-[11px] mt-3 leading-tight">
           By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages,
           including by automated means, from Uber and its affiliates to the
           number provided.
