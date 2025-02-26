@@ -7,6 +7,8 @@ const cors = require("cors");
 const connectToDB = require("./database/db");
 const userRoutes = require("./routes/user.routes");
 const driverRoutes = require("./routes/driver.routes");
+const mapRoutes = require("./routes/maps.routes");
+const rideRoutes = require("./routes/ride.routes");
 
 connectToDB();
 
@@ -22,5 +24,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/drivers", driverRoutes);
+app.use("/api/maps", mapRoutes);
+app.use("/api/rides", rideRoutes);
 
 module.exports = app;
