@@ -503,3 +503,100 @@ curl -X POST http://localhost:4000/api/drivers/register \
     "message": "Logged Out Successfully"
   }
   ```
+
+# Get Fare Endpoint
+
+## Endpoint
+
+`GET /api/rides/get-fare`
+
+## Description
+
+Calculates the estimated fare for a ride based on pickup and destination locations. The fare calculation includes base fare, per kilometer rate, and per minute rate for different vehicle types.
+
+## Authorization
+
+Requires a valid JWT token in the Authorization header:
+`Authorization: Bearer <token>`
+
+## Query Parameters
+
+- `pickup` (string, required): Starting location address
+- `destination` (string, required): Ending location address
+
+### Validation Rules
+- Both `pickup` and `destination` must be at least 3 characters long
+
+## Responses
+
+### Success
+
+- **Status Code**: `200 OK`
+- **Response Body**:
+  ```json
+  {
+    "auto": 100.50,
+    "car": 150.75,
+    "bike": 80.25
+  }
+  ```
+
+### Validation Error
+
+- **Status Code**: `400 Bad Request`
+- **Response Body**:
+  ```json
+  {
+    "errors": [
+      {
+        "msg": "Invalid Pickup Location",
+        "param": "pickup",
+        "location": "query"
+      }
+    ]
+  }
+  ```
+
+### Server Error
+
+- **Status Code**: `500 Internal Server Error`
+- **Response Body**:
+  ```json
+  {
+    "message": "Error message"
+  }
+  ```
+
+## Example Request
+
+```bash
+curl -X GET "http://localhost:4000/api/rides/get-fare?pickup=Mumbai&destination=Pune" \
+-H "Authorization: Bearer your_jwt_token"
+```
+
+## Example Response
+
+```json
+{
+  "auto": 450.50,
+  "car": 650.75,
+  "bike": 350.25
+}
+```
+
+## Rate Card
+
+### Base Fare
+- Auto: ₹30
+- Car: ₹50
+- Bike: ₹20
+
+### Per Kilometer Rate
+- Auto: ₹15/km
+- Car: ₹20/km
+- Bike: ₹10/km
+
+### Per Minute Rate
+- Auto: ₹2/min
+- Car: ₹3/min
+- Bike: ₹1/min

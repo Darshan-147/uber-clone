@@ -4,18 +4,18 @@ module.exports.getAddressCoordinates = async (address) => {
   if (!address) {
     throw new Error("Address is required");
   }
-  const apiKey = process.env.GOOGLE_MAPS_API;
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+  const apiKey = process.env.ORS_MAPS_API;
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(
     address
-  )}&key=${apiKey}`;
+  )}`;
 
   try {
     const response = await axios.get(url);
-    if (response.data.status === "OK") {
-      const location = response.data.results[0].geometry.location;
+    if (response.data.features && response.data.features.length > 0) {
+      const location = response.data.features[0].geometry.coordinates;
       return {
-        lat: location.lat,
-        lng: location.lng,
+        lat: location[1],
+        lng: location[0],
       };
     } else {
       throw new Error("Could not find location for the specified address");
@@ -30,26 +30,53 @@ module.exports.getDistanceTime = async (origin, destination) => {
   if (!origin || !destination) {
     throw new Error("Origin and destination are required");
   }
-  const apiKey = process.env.GOOGLE_MAPS_API;
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(
-    origin
-  )}&destinations=${encodeURIComponent(destination)}&key=${apiKey}`;
 
   try {
-    const response = await axios.get(url);
-    if (response.data.status === "OK") {
-      if (response.data.rows[0].elements[0].status === "ZERO_RESULTS") {
-        throw new Error("No routes found");
-      }
-      return response.data.rows[0].elements[0];
-    } else {
-      throw new Error(
-        "Could not find distance and time for the specified locations"
-      );
+    const apiKey = process.env.ORS_MAPS_API;
+
+    // Convert place names to coordinates
+    const originCoords = await module.exports.getAddressCoordinates(origin);
+    const destinationCoords = await module.exports.getAddressCoordinates(
+      destination
+    );
+
+    const url = `https://api.openrouteservice.org/v2/directions/driving-car`;
+
+    const response = await axios.get(url, {
+      params: {
+        api_key: apiKey,
+        start: `${originCoords.lng},${originCoords.lat}`,
+        end: `${destinationCoords.lng},${destinationCoords.lat}`,
+      },
+      headers: {
+        Accept:
+          "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
+      },
+    });
+
+    if (response.data && response.data.features && response.data.features[0]) {
+      const properties = response.data.features[0].properties;
+      
+      return {
+        distance: {
+          value: properties.segments[0].distance,
+          text: `${(properties.segments[0].distance / 1000).toFixed(1)} km`,
+        },
+        duration: {
+          value: properties.segments[0].duration,
+          text: `${Math.round(properties.segments[0].duration / 60)} mins`,
+        },
+      };
     }
+
+    throw new Error("Invalid response format from directions API");
   } catch (error) {
-    console.error(error);
-    throw error;
+    console.error("Distance Time Error:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
+    throw new Error("Failed to calculate distance and time");
   }
 };
 
@@ -57,20 +84,29 @@ module.exports.getSuggestions = async (input) => {
   if (!input) {
     throw new Error("Query is required");
   }
-  const apiKey = process.env.GOOGLE_MAPS_API;
-  const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
+
+  const apiKey = process.env.ORS_MAPS_API;
+  const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${apiKey}&text=${encodeURIComponent(
     input
-  )}&key=${apiKey}`;
+  )}`;
 
   try {
     const response = await axios.get(url);
-    if (response.data.status === "OK") {
-      return response.data.predictions;
+
+    if (response.data.features && response.data.features.length > 0) {
+      return response.data.features.map((feature) => ({
+        name: feature.properties.label,
+        lat: feature.geometry.coordinates[1],
+        lng: feature.geometry.coordinates[0],
+      }));
     } else {
       throw new Error("Could not find suggestions for the specified input");
     }
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Error fetching suggestions:",
+      error.response?.data || error.message
+    );
     throw error;
   }
 };
