@@ -16,12 +16,12 @@ const ConfirmRide = (props) => {
       <div className="flex items-center justify-between">
         <img
           className="h-24"
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s"
+          src={props.image[props.vehicleType]}
           alt="UberGo"
         />
         <div className="text-right">
-          <h2 className="text-lg font-bold">Ramu</h2>
-          <h4 className="text-xl font-semibold -mt-2 -mb-1">GJ 01 NY 2258</h4>
+          <h2 className="text-lg font-bold">Shubham</h2>
+          <h4 className="text-xl font-semibold -mt-2 -mb-1">GJ 01 NY 6972</h4>
           <p className="text-sm text-gray-600">Jaguar</p>
         </div>
       </div>
@@ -29,19 +29,23 @@ const ConfirmRide = (props) => {
       <div className="flex flex-col justify-between items-center gap-5">
         <div className="w-full flex flex-col gap-2">
           <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-map-pin-2-fill"></i>Current Location
+            <i className="ri-map-pin-2-fill"></i>
+            {props.pickup}
           </div>
           <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-square-fill"></i>Destination
+            <i className="ri-square-fill"></i>
+            {props.destination}
           </div>
           <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-bank-card-2-fill"></i>Rokda
+            <i className="ri-bank-card-2-fill"></i>₹{" "}
+            {props.fare[props.vehicleType]} only
           </div>
         </div>
         <button
           onClick={() => {
             props.setVehicleFound(true);
             props.setConfirmRidePanel(false);
+            props.createRide();
           }}
           className="bg-green-400 p-3 rounded-lg w-full font-semibold text-white"
         >

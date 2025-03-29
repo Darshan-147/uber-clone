@@ -9,69 +9,56 @@ import ConfirmRide from "../components/ConfirmRide";
 import LookingForDriver from "../components/LookingForDriver";
 
 const Home = () => {
-  const [pickup, setPickup] = useState("");
-  const [destination, setDestination] = useState("");
+  const [pickup, setPickup] = useState("Ahmedabad, GJ, India");
+  const [destination, setDestination] = useState("Chennai, TN, India");
   const [panelOpen, setPanelOpen] = useState(false);
   const [vehiclePanel, setVehiclePanel] = useState(false);
   const [confirmRidePanel, setConfirmRidePanel] = useState(false);
   const [vehicleFound, setVehicleFound] = useState(false);
-  const [waitingForDriver, setWaitingForDriver] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [activeField, setActiveField] = useState("");
   const [fare, setFare] = useState({});
+  const [vehicleType, setVehicleType] = useState("");
   const panelRef = useRef(null);
   const panelCloseRef = useRef(null);
   const vehiclePanelRef = useRef(null);
   const confirmRidePanelRef = useRef(null);
   const vehicleFoundRef = useRef(null);
-  const waitingForDriverRef = useRef(null);
 
   const submitHandler = (e) => {
     e.preventDefault();
   };
 
-  const fetchSuggestions = async (query) => {
+  const fetchSuggestions = async (input) => {
     try {
-      if (!query || query.trim() === "") {
+      if (!input || input.trim() === "") {
         setSuggestions([]);
         return;
       }
 
+      const token = localStorage.getItem("token");
       const response = await axios.get(
         `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/maps/get-suggestions`,
         {
-          params: { input: query.trim() },
+          params: { input: input.trim() },
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      console.log(response.data);
-      if (response.status == 200) {
+      if (response.data) {
         setSuggestions(response.data);
-      } else {
-        setSuggestions([]);
       }
     } catch (error) {
-      console.error("Error fetching suggestions:", error.message);
+      console.error(
+        "Error fetching suggestions:",
+        error.response?.data || error.message
+      );
       setSuggestions([]);
     }
   };
-
-  useEffect(() => {
-    const delayDebounce = setTimeout(() => {
-      if (pickup) {
-        setActiveField("pickup");
-        fetchSuggestions(pickup);
-      } else if (destination) {
-        setActiveField("destination");
-        fetchSuggestions(destination);
-      }
-    }, 300); // 300ms delay
-
-    return () => clearTimeout(delayDebounce);
-  }, [pickup, destination]);
 
   const handleSuggestionClick = (suggestion) => {
     if (activeField === "pickup") {
@@ -79,6 +66,7 @@ const Home = () => {
     } else if (activeField === "destination") {
       setDestination(suggestion.name);
     }
+    setSuggestions([]);
     setPanelOpen(false);
   };
 
@@ -99,9 +87,16 @@ const Home = () => {
       }
     );
     setFare(response.data);
+    console.log(response.data);
   };
 
-  const createRide = async (vehicleType) => {
+  const images = {
+    auto: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s",
+    car: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS50dWc9jVI7sEuKrjwkvIKFFShG0hab9uA4A&s",
+    bike: "https://w1.pngwing.com/pngs/381/835/png-transparent-yamaha-logo-car-decal-motorcycle-sticker-sport-bike-yamaha-yzfr1-bicycle.png",
+  };
+
+  const createRide = async () => {
     setVehiclePanel(false);
     setConfirmRidePanel(true);
 
@@ -119,9 +114,7 @@ const Home = () => {
       }
     );
 
-    if (response.data) {
-      setWaitingForDriver(true);
-    }
+    console.log(response.data);
   };
 
   useGSAP(() => {
@@ -198,7 +191,7 @@ const Home = () => {
         />
       </div>
       <div className="absolute h-screen flex flex-col justify-end top-0 w-full">
-        <div className="h-[30%] p-5 bg-white relative">
+        <div className="p-5 bg-white relative">
           <h4 className="font-semibold text-2xl md:text-3xl">Find a trip</h4>
           <h5
             ref={panelCloseRef}
@@ -209,19 +202,18 @@ const Home = () => {
           >
             <i className="ri-arrow-down-wide-line"></i>
           </h5>
-          <form
-            onSubmit={(e) => {
-              submitHandler(e);
-            }}
-          >
-            <div className="line absolute h-16 w-1 bg-black top-[50%] left-9 rounded-full"></div>
+          <form onSubmit={(e) => submitHandler(e)}>
+            {/* Vertical line */}
+            <div className="line absolute h-16 w-1 bg-black top-[35%] left-9 rounded-full"></div>
             <input
               value={pickup}
               onClick={() => {
                 setPanelOpen(true);
+                setActiveField("pickup");
               }}
               onChange={(e) => {
                 setPickup(e.target.value);
+                fetchSuggestions(e.target.value);
               }}
               className="bg-[#eee] px-8 py-3 w-full mt-5 rounded-2xl"
               type="text"
@@ -231,9 +223,11 @@ const Home = () => {
               value={destination}
               onClick={() => {
                 setPanelOpen(true);
+                setActiveField("destination");
               }}
               onChange={(e) => {
                 setDestination(e.target.value);
+                fetchSuggestions(e.target.value);
               }}
               className="bg-[#eee] px-8 py-3 w-full mt-3 rounded-2xl"
               type="text"
@@ -247,10 +241,13 @@ const Home = () => {
             Find Trip
           </button>
         </div>
-        <div ref={panelRef} className="h-0 bg-white">
+        {/* Suggestions Panel */}
+        <div
+          ref={panelRef}
+          className="bg-white z-30 max-h-[70vh] overflow-y-auto opacity-0"
+        >
           <LocationSearchPanel
             setPanelOpen={setPanelOpen}
-            setVehiclePanel={setVehiclePanel}
             suggestions={suggestions}
             onSuggestionClick={handleSuggestionClick}
           />
@@ -262,8 +259,9 @@ const Home = () => {
         className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 translate-y-full"
       >
         <VehiclePanel
-          createRide={createRide}
           fare={fare}
+          image={images}
+          setVehicleType={setVehicleType}
           setConfirmRidePanel={setConfirmRidePanel}
           setVehiclePanel={setVehiclePanel}
         />
@@ -273,6 +271,12 @@ const Home = () => {
         className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 pt-12 translate-y-full"
       >
         <ConfirmRide
+          pickup={pickup}
+          destination={destination}
+          fare={fare}
+          vehicleType={vehicleType}
+          image={images}
+          createRide={createRide}
           setConfirmRidePanel={setConfirmRidePanel}
           setVehicleFound={setVehicleFound}
         />
@@ -281,7 +285,14 @@ const Home = () => {
         ref={vehicleFoundRef}
         className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 pt-12 translate-y-full"
       >
-        <LookingForDriver setVehicleFound={setVehicleFound} />
+        <LookingForDriver
+          setVehicleFound={setVehicleFound}
+          pickup={pickup}
+          destination={destination}
+          fare={fare}
+          vehicleType={vehicleType}
+          image={images}
+        />
       </div>
     </div>
   );

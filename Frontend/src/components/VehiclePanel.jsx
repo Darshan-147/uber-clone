@@ -12,17 +12,19 @@ const VehiclePanel = (props) => {
         <i className="ri-arrow-down-wide-line"></i>
       </h5>
       <h3 className="text-2xl font-semibold mb-5">Choose a vehicle</h3>
+
+      {/* Uber Taxi */}
       <div
         onClick={() => {
           props.setConfirmRidePanel(true);
-          props.createRide("auto");
+          props.setVehicleType("auto");
         }}
         className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between"
       >
         <img
           className="h-10 w-16"
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s"
-          alt="UberGo"
+          src={props.image.auto}
+          alt="Taxi"
         />
         <div className="ml-2 w-1/2">
           <h4 className="font-medium text-base">
@@ -38,16 +40,18 @@ const VehiclePanel = (props) => {
         </div>
         <h2 className="font-semibold text-xl">₹{props.fare.auto}</h2>
       </div>
+
+      {/* Mercedez Benz */}
       <div
         onClick={() => {
           props.setConfirmRidePanel(true);
-          props.createRide("car");
+          props.setVehicleType("car");
         }}
         className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between"
       >
         <img
           className="h-10 w-16"
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS50dWc9jVI7sEuKrjwkvIKFFShG0hab9uA4A&s"
+          src={props.image.car}
           alt="MBenz"
         />
         <div className="ml-2 w-1/2">
@@ -64,16 +68,18 @@ const VehiclePanel = (props) => {
         </div>
         <h2 className="font-semibold text-xl">₹{props.fare.car}</h2>
       </div>
+
+      {/* Motorcycle */}
       <div
         onClick={() => {
           props.setConfirmRidePanel(true);
-          props.createRide("bike");
+          props.setVehicleType("bike");
         }}
         className="flex border-2 active:border-black rounded-xl w-full p-3 mb-4 items-center justify-between"
       >
         <img
           className="h-10 w-14"
-          src="https://w1.pngwing.com/pngs/381/835/png-transparent-yamaha-logo-car-decal-motorcycle-sticker-sport-bike-yamaha-yzfr1-bicycle.png"
+          src={props.image.bike}
           alt="Bike"
         />
         <div className="ml-2 w-1/2">
