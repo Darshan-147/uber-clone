@@ -16,7 +16,7 @@ const DriverSignup = () => {
   const [vehicleCapacity, setVehicleCapacity] = useState("3");
   const [vehicleType, setVehicleType] = useState("");
 
-  const { driver, setDriver } = useContext(DriverDataContext);
+  const { driver, updateDriver } = useContext(DriverDataContext);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -44,7 +44,7 @@ const DriverSignup = () => {
     if (response.status === 201) {
       const data = response.data;
 
-      setDriver(data.driver);
+      updateDriver(data.driver);
       localStorage.setItem('token',data.token)
       navigate("/driver-home");
     }

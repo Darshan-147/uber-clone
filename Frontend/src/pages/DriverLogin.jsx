@@ -10,7 +10,7 @@ const DriverLogin = () => {
 
   const navigate = useNavigate();
 
-  const { driver, setDriver } = useContext(DriverDataContext);
+  const { driver, updateDriver } = useContext(DriverDataContext);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -28,8 +28,8 @@ const DriverLogin = () => {
 
     if (response.status === 200) {
       const data = response.data;
-
-      setDriver(data.driver);
+      console.log("Received driver data:", data.driver); // Debug log
+      updateDriver(data.driver);
       localStorage.setItem("token", data.token);
       navigate("/driver-home");
     }

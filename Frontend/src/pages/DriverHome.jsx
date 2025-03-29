@@ -14,13 +14,7 @@ const DriverHome = () => {
   const confirmRidePopUpRef = useRef(null);
 
   const { driver } = useContext(DriverDataContext);
-  const driverData = JSON.parse(localStorage.getItem("driverData"));
   
-
-  useEffect(() => {
-    console.log("Driver data:", driver); // Debug log
-  }, [driver]);
-
   useGSAP(() => {
     if (ridePopUp) {
       gsap.to(ridePopUpRef.current, {
@@ -79,7 +73,7 @@ const DriverHome = () => {
           </div>
           <div className="flex flex-col items-end">
             <h4 className="text-xl font-medium">
-              {/* {driver.fullname?.firstname} */}Shubham Sadhwani
+              {`${driver?.fullname?.firstname || ''} ${driver?.fullname?.lastname || ''}`}
             </h4>
             <h4 className="text-lg font-medium">₹ 300.01</h4>
             <p className="text-sm font-semibold text-gray-600">Earned</p>
