@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
+import { DriverDataContext } from "../context/DriverContext";
 
 const ConfirmRide = (props) => {
+
+  const { driver } = useContext(DriverDataContext);
+
   return (
     <div>
       <h5
@@ -13,16 +17,14 @@ const ConfirmRide = (props) => {
       </h5>
       <h3 className="text-2xl font-semibold mb-5">Confirm Your Ride</h3>
 
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between">
         <img
           className="h-24"
           src={props.image[props.vehicleType]}
           alt="UberGo"
         />
-        <div className="text-right">
-          <h2 className="text-lg font-bold">Shubham</h2>
-          <h4 className="text-xl font-semibold -mt-2 -mb-1">GJ 01 NY 6972</h4>
-          <p className="text-sm text-gray-600">Jaguar</p>
+        <div className="text-right flex justify-center items-center">
+          <h4 className="text-xl font-semibold">Travelling by {props.vehicleType}</h4>
         </div>
       </div>
 

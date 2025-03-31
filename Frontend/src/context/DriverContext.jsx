@@ -17,7 +17,7 @@ const DriverContext = ({ children }) => {
     setDriver(driverData);
   };
 
-  // Optional: Add a method to clear driver data
+  
   const clearDriver = () => {
     console.log("Clearing driver data"); // Debug log
     localStorage.removeItem("driverData");

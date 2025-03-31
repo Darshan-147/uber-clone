@@ -1,5 +1,6 @@
 const http = require("http");
 const app = require("./app.js");
+const {initializeSocket} = require("./socket.js");
 const port = process.env.PORT || 3000;
 
 let server = http.createServer(app);
@@ -23,6 +24,9 @@ server.on("error", (err) => {
     throw err;
   }
 });
+
+// Initialize socket.io
+initializeSocket(server);
 
 // Start the server
 startServer(port);

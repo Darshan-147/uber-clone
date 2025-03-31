@@ -71,50 +71,70 @@ const Home = () => {
   };
 
   const findTrip = async () => {
-    setVehiclePanel(true);
-    setPanelOpen(false);
-
-    const response = await axios.get(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/get-fare`,
-      {
-        params: {
-          pickup,
-          destination,
-        },
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+    try {
+      if (!pickup || !destination) {
+        console.error("Pickup and destination are required");
+        return;
       }
-    );
-    setFare(response.data);
-    console.log(response.data);
+
+      setVehiclePanel(true);
+      setPanelOpen(false);
+
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/get-fare`,
+        {
+          params: {
+            pickup: pickup.trim(),
+            destination: destination.trim(),
+          },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Fare response:", response.data);
+      setFare(response.data);
+    } catch (error) {
+      console.error(
+        "Error getting fare:",
+        error.response?.data || error.message
+      );
+    }
   };
 
+  const createRide = async () => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/create-ride`,
+        {
+          pickup: pickup.trim(),
+          destination: destination.trim(),
+          vehicleType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Ride created:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error creating ride:",
+        error.response?.data || error.message
+      );
+    }
+  };
+  
   const images = {
     auto: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s",
     car: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS50dWc9jVI7sEuKrjwkvIKFFShG0hab9uA4A&s",
     bike: "https://w1.pngwing.com/pngs/381/835/png-transparent-yamaha-logo-car-decal-motorcycle-sticker-sport-bike-yamaha-yzfr1-bicycle.png",
-  };
-
-  const createRide = async () => {
-    setVehiclePanel(false);
-    setConfirmRidePanel(true);
-
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/create-ride`,
-      {
-        pickup,
-        destination,
-        vehicleType,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
-
-    console.log(response.data);
   };
 
   useGSAP(() => {
