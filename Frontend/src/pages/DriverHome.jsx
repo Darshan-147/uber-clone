@@ -6,6 +6,7 @@ import gsap from "gsap";
 import ConfirmRidePopUp from "../components/ConfirmRidePopUp";
 import { DriverDataContext } from "../context/DriverContext";
 import driverImage from "../../assets/images/driverImage.jpeg";
+import { SocketContext } from "../context/SocketContext";
 
 const DriverHome = () => {
   const [ridePopUp, setRidePopUp] = useState(false);
@@ -13,8 +14,15 @@ const DriverHome = () => {
   const ridePopUpRef = useRef(null);
   const confirmRidePopUpRef = useRef(null);
 
+  const { sendMessage, recieveMessage } = useContext(SocketContext);
   const { driver } = useContext(DriverDataContext);
-  
+
+  useEffect(() => {
+    console.log(driver);
+    
+    sendMessage("join", { userId: driver._id, userType: "driver" });
+  }, []);
+
   useGSAP(() => {
     if (ridePopUp) {
       gsap.to(ridePopUpRef.current, {
@@ -73,7 +81,9 @@ const DriverHome = () => {
           </div>
           <div className="flex flex-col items-end">
             <h4 className="text-xl font-medium">
-              {`${driver?.fullname?.firstname || ''} ${driver?.fullname?.lastname || ''}`}
+              {`${driver?.fullname?.firstname || ""} ${
+                driver?.fullname?.lastname || ""
+              }`}
             </h4>
             <h4 className="text-lg font-medium">₹ 300.01</h4>
             <p className="text-sm font-semibold text-gray-600">Earned</p>
