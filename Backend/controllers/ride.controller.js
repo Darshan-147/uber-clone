@@ -1,5 +1,6 @@
 const rideService = require("../services/ride.service");
 const { validationResult } = require("express-validator");
+const mapService = require("../services/maps.service");
 
 module.exports.createRide = async (req, res) => {
   try {
@@ -10,7 +11,6 @@ module.exports.createRide = async (req, res) => {
     }
 
     const { pickup, destination, vehicleType } = req.body;
-    console.log("Create ride request:", { pickup, destination, vehicleType }); // Debug log
 
     const ride = await rideService.createRide({
       user: req.user._id,
@@ -19,8 +19,22 @@ module.exports.createRide = async (req, res) => {
       vehicleType,
     });
 
-    console.log("Created ride:", ride); // Debug log
-    return res.status(201).json(ride);
+    res.status(201).json(ride);
+
+    const pickupCoordinates = await mapService.getAddressCoordinates(pickup);
+    console.log("Here is the pickup location: ", pickupCoordinates);
+
+    const driversInRadius = await mapService.getDriversInTheRadius(
+      pickupCoordinates.lat,
+      pickupCoordinates.lng,
+      6000
+    );
+
+    if (driversInRadius.length === 0) {
+      console.log("No drivers found in the radius");
+    } else {
+      console.log("Drivers nearby:", driversInRadius);
+    }
   } catch (error) {
     console.error("Ride creation error:", error);
     return res.status(500).json({ message: error.message });
@@ -43,7 +57,7 @@ module.exports.getFare = async (req, res) => {
 
     return res.status(200).json(fare);
   } catch (error) {
-    console.log('Fare calculation error:', error.message);
+    console.log("Fare calculation error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };

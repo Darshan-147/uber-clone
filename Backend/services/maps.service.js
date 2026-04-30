@@ -1,4 +1,5 @@
 const axios = require("axios");
+const driverModel = require("../models/driver.model");
 
 module.exports.getAddressCoordinates = async (address) => {
   if (!address) {
@@ -56,7 +57,7 @@ module.exports.getDistanceTime = async (origin, destination) => {
 
     if (response.data && response.data.features && response.data.features[0]) {
       const properties = response.data.features[0].properties;
-      
+
       return {
         distance: {
           value: properties.segments[0].distance,
@@ -108,5 +109,26 @@ module.exports.getSuggestions = async (input) => {
       error.response?.data || error.message
     );
     throw error;
+  }
+};
+
+module.exports.getDriversInTheRadius = async (lat, lng, radius) => {
+  try {
+    const drivers = await driverModel.find({
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+          $maxDistance: radius,
+        },
+      },
+    });
+
+    return drivers;
+  } catch (error) {
+    console.error("Error fetching drivers in radius:", error.message);
+    throw new Error("Failed to fetch drivers in the radius");
   }
 };

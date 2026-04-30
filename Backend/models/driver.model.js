@@ -62,14 +62,19 @@ const driverSchema = new mongoose.Schema({
   },
 
   location: {
-    lat: {
-      type: Number,
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
     },
-    lng: {
-      type: Number,
-    },
+    coordinates: {
+      type: [Number],  // [longitude, latitude]
+      required: true
+    }
   },
 });
+
+driverSchema.index({ location: "2dsphere" });
 
 driverSchema.methods.generateAuthToken = function () {
   const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {

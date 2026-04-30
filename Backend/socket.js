@@ -21,12 +21,26 @@ function initializeSocket(server) {
       if (userType === "user") {
         await userModel.findByIdAndUpdate(userId, { socketId: socket.id });
         console.log(`User ${userId} joined with socket ID: ${socket.id}`);
-
       } else if (userType === "driver") {
         await driverModel.findByIdAndUpdate(userId, { socketId: socket.id });
         console.log(`Driver ${userId} joined with socket ID: ${socket.id}`);
-        
       }
+    });
+
+    socket.on("update-driver-location", async (data) => {
+      const { userId, location } = data;
+
+      if (!location || !location.lat || !location.lng) {
+        return socket.emit("error", { message: "Invalid location data" });
+      }
+
+      await driverModel.findByIdAndUpdate(userId, {
+        location: {
+          lat: location.lat,
+          lng: location.lng,
+        },
+      });
+      console.log(`User ${userId} updated location to latitude: ${location.lat}, longitude: ${location.lng}`);
     });
 
     socket.on("disconnect", () => {

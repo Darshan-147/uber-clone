@@ -19,8 +19,23 @@ const DriverHome = () => {
 
   useEffect(() => {
     console.log(driver);
-    
     sendMessage("join", { userId: driver._id, userType: "driver" });
+
+    const updateLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          const { latitude, longitude } = position.coords;
+          sendMessage("update-driver-location", {
+            userId: driver._id,
+            location: { lat: latitude, lng: longitude },
+          });
+        });
+      }
+    };
+
+    const locationInterval = setInterval(updateLocation(), 1000);
+
+    return clearInterval(locationInterval);
   }, []);
 
   useGSAP(() => {
