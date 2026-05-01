@@ -12,7 +12,16 @@ const rideRoutes = require("./routes/ride.routes");
 
 connectToDB();
 
-app.use(cors());
+const allowedOrigins = (process.env.CORS_ORIGIN || "*")
+  .split(",")
+  .map((origin) => origin.trim());
+
+app.use(
+  cors({
+    origin: allowedOrigins.includes("*") ? "*" : allowedOrigins,
+    credentials: !allowedOrigins.includes("*"),
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

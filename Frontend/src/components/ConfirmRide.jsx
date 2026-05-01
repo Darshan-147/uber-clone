@@ -1,10 +1,6 @@
-import React, { useContext } from "react";
-import { DriverDataContext } from "../context/DriverContext";
+import React from "react";
 
 const ConfirmRide = (props) => {
-
-  const { driver } = useContext(DriverDataContext);
-
   return (
     <div>
       <h5
@@ -44,14 +40,14 @@ const ConfirmRide = (props) => {
           </div>
         </div>
         <button
-          onClick={() => {
-            props.setVehicleFound(true);
-            props.setConfirmRidePanel(false);
-            props.createRide();
+          type="button"
+          onClick={async () => {
+            await props.createRide();
           }}
+          disabled={props.loading}
           className="bg-green-400 p-3 rounded-lg w-full font-semibold text-white"
         >
-          Confirm
+          {props.loading ? "Confirming..." : "Confirm"}
         </button>
       </div>
     </div>

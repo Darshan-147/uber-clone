@@ -6,16 +6,21 @@ const DriverLogout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("driverToken") || localStorage.getItem("token");
 
     axios
-      .get(`${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/logout`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      .get(
+        `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/user-logout`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      })
+      )
       .then((response) => {
         if (response.status === 200) {
+          localStorage.removeItem("driverToken");
           localStorage.removeItem("token");
           console.log("Deleted driver token");
           navigate("/driver-login"); // Redirecting to driver login page

@@ -7,7 +7,7 @@ const GetStarted = () => {
       <img className="w-12 ml-8" src="https://static-00.iconduck.com/assets.00/uber-icon-2048x2048-1c9pt96a.png" alt="uber-logo"></img>
       <div className="bg-white py-4 px-4 pb-7">
         <h2 className="text-5xl font-semibold">Get Started with Uber</h2>
-        <Link to="/login" className="bg-black text-white w-full flex justify-center py-3 mt-5 rounded hover:bg-slate-800">Continue</Link>
+        <Link to="/user-login" className="bg-black text-white w-full flex justify-center py-3 mt-5 rounded hover:bg-slate-800">Continue</Link>
       </div>
     </div>
   );

@@ -22,15 +22,16 @@ const DriverLogin = () => {
 
     // To send the response from frontend to backend
     const response = await axios.post(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/login`,
-      existingDriver
+      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/user-login`,
+      existingDriver,
     );
 
     if (response.status === 200) {
       const data = response.data;
       console.log("Received driver data:", data.driver); // Debug log
       updateDriver(data.driver);
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("driverToken", data.token);
+      localStorage.removeItem("token");
       navigate("/driver-home");
     }
 
@@ -53,7 +54,7 @@ const DriverLogin = () => {
         >
           <h3 className="text-lg mb-2">Yo, what's your email?</h3>
           <input
-            value={email}   // Two way binding
+            value={email} // Two way binding
             onChange={(e) => {
               setEmail(e.target.value);
             }}
@@ -64,7 +65,7 @@ const DriverLogin = () => {
           />
           <h3 className="text-lg mb-2">Enter password</h3>
           <input
-            value={password}   // Two way binding
+            value={password} // Two way binding
             onChange={(e) => {
               setPassword(e.target.value);
             }}
@@ -86,7 +87,7 @@ const DriverLogin = () => {
       </div>
       <div>
         <Link
-          to="/login"
+          to="/user-login"
           className="bg-[#ff8a00] text-white font-semibold rounded px-4 py-2 mb-7 border w-full flex justify-center text-lg"
         >
           Sign In as User

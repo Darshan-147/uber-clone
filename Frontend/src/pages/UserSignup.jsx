@@ -28,14 +28,15 @@ const UserSignup = () => {
     // To send the response from frontend to backend
     const response = await axios.post(
       `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/register`,
-      newUser
+      newUser,
     );
 
     if (response.status === 201) {
       const data = response.data;
 
       setUser(data.user);
-      localStorage.setItem('token',data.token)
+      localStorage.setItem("userToken", data.token);
+      localStorage.removeItem("token");
       navigate("/home");
     }
 
@@ -109,7 +110,7 @@ const UserSignup = () => {
         </form>
         <p>
           Already have an account?{" "}
-          <Link to="/login" className="text-blue-700">
+          <Link to="/user-login" className="text-blue-700">
             Login
           </Link>{" "}
         </p>

@@ -27,11 +27,11 @@ const App = () => {
             </UserProtectedWrapper>
           }
         />
-        <Route path="/signup" element={<UserSignup />} />
-        <Route path="/login" element={<UserLogin />} />
-        <Route path="/riding" element={<Riding />} />
+        <Route path="/user-signup" element={<UserSignup />} />
+        <Route path="/user-login" element={<UserLogin />} />
+        <Route path="/user-riding" element={<Riding />} />
         <Route
-          path="/logout"
+          path="/user-logout"
           element={
             <UserProtectedWrapper>
               <UserLogout />
@@ -48,7 +48,14 @@ const App = () => {
         />
         <Route path="/driver-signup" element={<DriverSignup />} />
         <Route path="/driver-login" element={<DriverLogin />} />
-        <Route path="/driver-riding" element={<DriverRiding/>} />
+        <Route
+          path="/driver-riding"
+          element={
+            <DriverProtectedWrapper>
+              <DriverRiding />
+            </DriverProtectedWrapper>
+          }
+        />
         <Route
           path="/driver-logout"
           element={

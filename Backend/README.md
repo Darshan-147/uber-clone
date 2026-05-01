@@ -1,602 +1,216 @@
-# User Registration Endpoint
+# Backend
 
-## Endpoint
+Express + MongoDB API for the Uber Clone. It handles rider and driver authentication, map lookups, fare calculation, ride lifecycle APIs, OTP verification, and real-time ride notifications through Socket.IO.
 
-`POST /api/users/register`
-
-## Description
-
-This endpoint is used to register a new user. It validates the input data, checks if the email already exists, hashes the password, and creates a new user in the database.
-
-## Request Body
-
-The request body should be a JSON object with the following structure:
-
-```json
-{
-  "fullname": {
-    "firstname": "John",
-    "lastname": "Doe"
-  },
-  "email": "john.doe@example.com",
-  "password": "yourpassword"
-}
-```
-
-### Validation Rules
-
-- `fullname.firstname`: Must be at least 3 characters long.
-- `fullname.lastname`: Must be at least 3 characters long.
-- `email`: Must be a valid email address.
-- `password`: Must be at least 6 characters long.
-
-## Responses
-
-### Success
-
-- **Status Code**: `201 Created`
-- **Response Body**:
-  ```json
-  {
-    "token": "jwt_token",
-    "user": {
-      "_id": "user_id",
-      "fullname": {
-        "firstname": "John",
-        "lastname": "Doe"
-      },
-      "email": "john.doe@example.com",
-      "password": "123456",
-      "socketId": null
-    }
-  }
-  ```
-
-### Validation Error
-
-- **Status Code**: `400 Bad Request`
-- **Response Body**:
-  ```json
-  {
-    "errors": [
-      {
-        "msg": "First name must be at least 3 characters long",
-        "param": "fullname.firstname",
-        "location": "body"
-      },
-      {
-        "msg": "Invalid Email",
-        "param": "email",
-        "location": "body"
-      },
-      {
-        "msg": "Password must be at least 6 characters long",
-        "param": "password",
-        "location": "body"
-      }
-    ]
-  }
-  ```
-
-### Email Already Exists
-
-- **Status Code**: `400 Bad Request`
-- **Response Body**:
-  ```json
-  {
-    "message": "Email already exists"
-  }
-  ```
-
-### Server Error
-
-- **Status Code**: `500 Internal Server Error`
-- **Response Body**:
-  ```json
-  {
-    "message": "Internal Server Error"
-  }
-  ```
-
-### Example Request
+## Setup
 
 ```bash
-- curl -X POST http://localhost:4000/api/users/register \
-- "Content-Type: application/json" \
+cd Backend
+npm install
+npm run dev
 ```
 
-```json
-{
-  "fullname": {
-    "firstname": "John",
-    "lastname": "Doe"
-  },
-  "email": "john.doe@example.com",
-  "password": "password123"
-}
+The server reads `PORT` from `.env`. In local development this project is typically run on `http://localhost:4000`.
+
+## Environment Variables
+
+Create `Backend/.env`:
+
+```env
+PORT=4000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+ORS_MAPS_API=your_openrouteservice_api_key
+CORS_ORIGIN=http://localhost:5173
 ```
 
-### Example Response
+Optional ride tuning variables:
 
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "_id": "60d0fe4f5311236168a109ca",
-    "fullname": {
-      "firstname": "John",
-      "lastname": "Doe"
-    },
-    "email": "john.doe@example.com",
-    "password": "$2b$10$...",
-    "socketId": null
-  }
-}
+```env
+DRIVER_SEARCH_RADIUS_METERS=6000
+MAX_AVAILABLE_RIDES=20
+RIDE_OTP_LENGTH=6
+MAX_OTP_ATTEMPTS=3
+RIDE_FARE_RATES_JSON={"auto":{"base":30,"perKm":15,"perMinute":2},"car":{"base":50,"perKm":20,"perMinute":3},"bike":{"base":20,"perKm":10,"perMinute":1}}
 ```
 
-# User Profile Endpoint
-
-## Endpoint
-
-`GET /api/users/profile`
-
-## Description
-
-Retrieves the profile information of the currently authenticated user.
-
-## Authorization
-
-Requires a valid JWT token in the Authorization header:
-`Authorization: Bearer <token>`
-
-## Responses
-
-### Success
-
-- **Status Code**: `200 OK`
-- **Response Body**:
-  ```json
-  {
-    "_id": "60d0fe4f5311236168a109ca",
-    "fullname": {
-      "firstname": "John",
-      "lastname": "Doe"
-    },
-    "email": "john.doe@example.com",
-    "socketId": null
-  }
-  ```
-
-### Unauthorized
-
-- **Status Code**: `401 Unauthorized`
-- **Response Body**:
-  ```json
-  {
-    "message": "Authorization token required"
-  }
-  ```
-
-## Example Request
+## Scripts
 
 ```bash
-# For Profile
-curl -X GET http://localhost:4000/api/users/profile \
--H "Authorization: Bearer your_jwt_token"
+npm run dev   # start server with nodemon
+npm test      # currently placeholder only
 ```
 
-## Example Response
+## Folder Structure
 
-```json
-{
-    "_id": "60d0fe4f5311236168a109ca",
-    "fullname": {
-        "firstname": "John",
-        "lastname": "Doe"
-    },
-    "email": "john.doe@example.com",
-    "socketId": null
-}
+```text
+Backend/
+  config/                 Ride constants and fare configuration
+  controllers/            Express route handlers
+  database/               MongoDB connection setup
+  middlewares/            JWT auth middleware
+  models/                 Mongoose models
+  routes/                 Express routers
+  services/               Business logic and external API calls
+  app.js                  Express app setup
+  server.js               HTTP + Socket.IO server bootstrap
+  socket.js               Socket.IO event handling
 ```
 
-# User Logout Endpoint
+## Database Setup
 
-## Endpoint
+The app uses MongoDB through Mongoose.
 
-`GET /api/users/logout`
+1. Create a MongoDB database locally or in MongoDB Atlas.
+2. Put the connection string in `MONGO_URI`.
+3. Start the backend with `npm run dev`.
 
-## Description
+There are no migration files in the current project. Collections are created by Mongoose as documents are inserted.
 
-Logs out the currently authenticated user by clearing the cookie and blacklisting the JWT token.
+Important indexes are declared in models:
 
-## Authorization
+- `rides`: rider/date, driver/date, status, and `pickupLocation` 2dsphere index
+- `drivers`: `location` 2dsphere index for nearby-driver lookup
 
-Requires a valid JWT token in the Authorization header:
-`Authorization: Bearer <token>`
+## Auth and Middleware
 
-## Responses
+Authentication uses JWTs generated by the user and driver models.
 
-### Success
+- Rider-protected routes use `authMiddleware.authUser`.
+- Driver-protected routes use `authMiddleware.authDriver`.
+- Tokens can be supplied in the `Authorization: Bearer <token>` header or the `token` cookie.
+- Blacklisted tokens are checked through `blacklistToken.model.js` during logout.
+- The auth middleware rejects missing, blacklisted, invalid, or wrong-role tokens with `401 Unauthorized`.
 
-- **Status Code**: `200 OK`
-- **Response Body**:
-  ```json
-  {
-    "message": "Logged Out"
-  }
-  ```
+The frontend stores rider and driver tokens separately as `userToken` and `driverToken`.
 
-### Unauthorized
+## API Routes
 
-- **Status Code**: `401 Unauthorized`
-- **Response Body**:
-  ```json
-  {
-    "message": "Authorization token required"
-  }
-  ```
+Base health check:
 
-## Example Request
+- `GET /` - returns a simple server response
+
+### Users
+
+Mounted at `/api/users`.
+
+- `POST /register` - create a rider account
+- `POST /login` - rider login
+- `GET /profile` - current rider profile, requires rider token
+- `GET /logout` - blacklist rider token
+
+### Drivers
+
+Mounted at `/api/drivers`.
+
+Current route file names:
+
+- `POST /register` - create a driver account
+- `POST /user-login` - driver login
+- `GET /user-profile` - current driver profile, requires driver token
+- `GET /user-logout` - blacklist driver token
+
+If the frontend uses `/api/drivers/login`, `/api/drivers/profile`, or `/api/drivers/logout`, update either the frontend or these route names so both sides match.
+
+### Maps
+
+Mounted at `/api/maps`. These routes require a rider token.
+
+- `GET /get-coordinates?address=...`
+- `GET /get-distance-time?origin=...&destination=...`
+- `GET /get-suggestions?input=...`
+
+Map services use OpenRouteService:
+
+- Geocoding search for coordinates
+- Geocoding autocomplete for suggestions
+- Directions API for distance and duration
+
+### Rides
+
+Mounted at `/api/rides`.
+
+Rider routes:
+
+- `POST /create-ride` - create a pending ride
+- `GET /get-fare?pickup=...&destination=...` - fare estimates for vehicle types
+- `POST /cancel-ride` - cancel a ride
+- `GET /get-user-rides?status=...` - list rider rides
+- `GET /get-ride-details/:rideId` - fetch one ride
+
+Driver routes:
+
+- `GET /get-available-rides?latitude=...&longitude=...` - nearby pending rides for the driver's vehicle type
+- `GET /get-driver-rides?status=...` - list driver rides
+- `POST /accept-ride` - accept a pending ride
+- `POST /verify-otp` - verify rider OTP and start ride
+- `POST /finish-ride` - complete an in-progress ride
+
+Ride statuses:
+
+- `pending`
+- `accepted`
+- `in-progress`
+- `completed`
+- `cancelled`
+
+Vehicle types:
+
+- Rider choices: `auto`, `car`, `bike`
+- Driver vehicle mapping: `auto -> auto`, `car -> car`, `motorcycle -> bike`
+
+## Socket.IO
+
+Socket.IO is initialized in `server.js` and handled in `socket.js`.
+
+Client events:
+
+- `join` - register socket as `user` or `driver`
+- `update-driver-location` - update active driver coordinates
+- `ride-requested` - notify an assigned driver about a ride
+- `ride-status-update` - broadcast status changes to both ride participants
+- `driver-location-update` - send driver location to the rider during a ride
+
+Server-emitted events:
+
+- `joined`
+- `new-ride`
+- `new-ride-notification`
+- `ride-accepted`
+- `otp-verified`
+- `ride-completed`
+- `ride-cancelled`
+- `ride-status`
+- `driver-location`
+
+## Fare and Ride Creation
+
+`ride.service.js` calculates fares using:
+
+- OpenRouteService distance in meters
+- OpenRouteService duration in seconds
+- Per-vehicle base, per-kilometer, and per-minute rates from `ride.config.js`
+
+When a ride is created:
+
+1. Pickup and destination are geocoded.
+2. Distance and duration are fetched.
+3. Fare is calculated for the selected vehicle.
+4. A six-digit OTP is generated.
+5. Nearby active drivers are found by geospatial query.
+6. Matching drivers receive a `new-ride` socket event.
+
+## Running Tests
+
+There is no automated backend test suite yet. The current `npm test` script is a placeholder that exits with an error.
+
+Useful manual checks:
 
 ```bash
-curl -X GET http://localhost:4000/api/users/logout \
--H "Authorization: Bearer your_jwt_token"
+node --check app.js
+node --check server.js
+node --check controllers/ride.controller.js
+npm run dev
 ```
 
-## Example Response
-
-```json
-{
-    "message": "Logged Out"
-}
-```
-
-# Driver Registration Endpoint
-
-## Endpoint
-
-`POST /api/drivers/register`
-
-## Description
-
-This endpoint is used to register a new driver. It validates the input data and creates a new driver in the database.
-
-## Request Body
-
-The request body should be a JSON object with the following structure:
-
-```json
-{
-  "fullname": {
-    "firstname": "John",
-    "lastname": "Doe"
-  },
-  "email": "john.doe@example.com",
-  "password": "yourpassword",
-  "vehicle": {
-    "color": "black",
-    "plate": "ABC123",
-    "capacity": 4,
-    "vehicleType": "car"
-  }
-}
-```
-
-### Validation Rules
-
-- `fullname.firstname`: Must be at least 3 characters long
-- `email`: Must be a valid email address
-- `password`: Must be at least 6 characters long
-- `vehicle.color`: Must be at least 3 characters long
-- `vehicle.plate`: Must be at least 3 characters long
-- `vehicle.capacity`: Must be at least 1
-- `vehicle.vehicleType`: Must be one of: "car", "motorcycle", "auto"
-
-## Responses
-
-### Success
-
-- **Status Code**: `201 Created`
-- **Response Body**:
-  ```json
-  {
-    "driver": {
-      "_id": "driver_id",
-      "fullname": {
-        "firstname": "John",
-        "lastname": "Doe"
-      },
-      "email": "john.doe@example.com",
-      "vehicle": {
-        "color": "black",
-        "plate": "ABC123",
-        "capacity": 4,
-        "vehicleType": "car"
-      }
-    }
-  }
-  ```
-
-### Validation Error
-
-- **Status Code**: `400 Bad Request`
-- **Response Body**:
-  ```json
-  {
-    "errors": [
-      {
-        "msg": "First name must be at least 3 characters long",
-        "param": "fullname.firstname",
-        "location": "body"
-      }
-    ]
-  }
-  ```
-
-## Example Request
-
-```bash
-curl -X POST http://localhost:4000/api/drivers/register \
--H "Content-Type: application/json" \
--d '{
-  "fullname": {
-    "firstname": "John",
-    "lastname": "Doe"
-  },
-  "email": "john.doe@example.com",
-  "password": "password123",
-  "vehicle": {
-    "color": "black",
-    "plate": "ABC123",
-    "capacity": 4,
-    "vehicleType": "car"
-  }
-}'
-```
-
-## Example Response
-
-```json
-  {
-    "driver": {
-      "_id": "driver_id",
-      "fullname": {
-        "firstname": "John",
-        "lastname": "Doe"
-      },
-      "email": "john.doe@example.com",
-      "vehicle": {
-        "color": "black",
-        "plate": "ABC123",
-        "capacity": 4,
-        "vehicleType": "car"
-      }
-    }
-  }
-  ```
-
-  # Driver Profile Endpoint
-
-  ## Endpoint
-
-  `GET /api/drivers/profile`
-
-  ## Description
-
-  Retrieves the profile information of the currently authenticated driver.
-
-  ## Authorization
-
-  Requires a valid JWT token in the Authorization header:
-  `Authorization: Bearer <token>`
-
-  ## Responses
-
-  ### Success
-
-  - **Status Code**: `200 OK`
-  - **Response Body**:
-    ```json
-    {
-      "_id": "60d0fe4f5311236168a109ca",
-      "fullname": {
-        "firstname": "John",
-        "lastname": "Doe"
-      },
-      "email": "john.doe@example.com",
-      "vehicle": {
-        "color": "black", 
-        "plate": "ABC123",
-        "capacity": 4,
-        "vehicleType": "car"
-      },
-      "socketId": null
-    }
-    ```
-
-  ### Unauthorized
-
-  - **Status Code**: `401 Unauthorized`
-  - **Response Body**:
-    ```json
-    {
-      "message": "Authorization token required"
-    }
-    ```
-
-  ## Example Request
-  ```bash
-  
-  curl -X GET http://localhost:4000/api/drivers/profile \
-  -H "Authorization: Bearer your_jwt_token"
-  ```
-
-  ## Example Response
-
-  ```json
-  {
-    "_id": "60d0fe4f5311236168a109ca",
-    "fullname": {
-      "firstname": "John",
-      "lastname": "Doe"
-    },
-    "email": "john.doe@example.com",
-    "vehicle": {
-      "color": "black",
-      "plate": "ABC123",
-      "capacity": 4,
-      "vehicleType": "car"
-    },
-    "socketId": null
-  }
-  ```
-
-  # Driver Logout Endpoint
-
-  ## Endpoint
-
-  `GET /api/drivers/logout`
-
-  ## Description
-
-  Logs out the currently authenticated driver by clearing the authentication cookie and blacklisting the JWT token to prevent reuse.
-
-  ## Authorization
-
-  Requires a valid JWT token either in:
-  - Cookie: `token=<jwt_token>`
-  - Authorization header: `Authorization: Bearer <jwt_token>`
-
-  ## Responses
-
-  ### Success
-
-  - **Status Code**: `200 OK`
-  - **Response Body**:
-    ```json
-    {
-      "message": "Logged Out Successfully"
-    }
-    ```
-
-  ### Unauthorized
-
-  - **Status Code**: `401 Unauthorized`
-  - **Response Body**:
-    ```json
-    {
-      "message": "Authorization token required" 
-    }
-    ```
-
-  ## Example Request
-
-  ```bash
-  curl -X GET http://localhost:4000/api/drivers/logout \
-  -H "Authorization: Bearer your_jwt_token"
-  ```
-
-  ## Example Response
-
-  ```json
-  {
-    "message": "Logged Out Successfully"
-  }
-  ```
-
-# Get Fare Endpoint
-
-## Endpoint
-
-`GET /api/rides/get-fare`
-
-## Description
-
-Calculates the estimated fare for a ride based on pickup and destination locations. The fare calculation includes base fare, per kilometer rate, and per minute rate for different vehicle types.
-
-## Authorization
-
-Requires a valid JWT token in the Authorization header:
-`Authorization: Bearer <token>`
-
-## Query Parameters
-
-- `pickup` (string, required): Starting location address
-- `destination` (string, required): Ending location address
-
-### Validation Rules
-- Both `pickup` and `destination` must be at least 3 characters long
-
-## Responses
-
-### Success
-
-- **Status Code**: `200 OK`
-- **Response Body**:
-  ```json
-  {
-    "auto": 100.50,
-    "car": 150.75,
-    "bike": 80.25
-  }
-  ```
-
-### Validation Error
-
-- **Status Code**: `400 Bad Request`
-- **Response Body**:
-  ```json
-  {
-    "errors": [
-      {
-        "msg": "Invalid Pickup Location",
-        "param": "pickup",
-        "location": "query"
-      }
-    ]
-  }
-  ```
-
-### Server Error
-
-- **Status Code**: `500 Internal Server Error`
-- **Response Body**:
-  ```json
-  {
-    "message": "Error message"
-  }
-  ```
-
-## Example Request
-
-```bash
-curl -X GET "http://localhost:4000/api/rides/get-fare?pickup=Mumbai&destination=Pune" \
--H "Authorization: Bearer your_jwt_token"
-```
-
-## Example Response
-
-```json
-{
-  "auto": 450.50,
-  "car": 650.75,
-  "bike": 350.25
-}
-```
-
-## Rate Card
-
-### Base Fare
-- Auto: ₹30
-- Car: ₹50
-- Bike: ₹20
-
-### Per Kilometer Rate
-- Auto: ₹15/km
-- Car: ₹20/km
-- Bike: ₹10/km
-
-### Per Minute Rate
-- Auto: ₹2/min
-- Car: ₹3/min
-- Bike: ₹1/min
+Then exercise the rider and driver flows from the frontend.

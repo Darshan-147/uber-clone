@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/user.model");
 const driverModel = require("../models/driver.model");
@@ -23,6 +23,10 @@ module.exports.authUser = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await userModel.findById(decoded._id);
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
     req.user = user;
 
@@ -50,6 +54,10 @@ module.exports.authDriver = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const driver = await driverModel.findById(decoded._id);
+
+    if (!driver) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
     req.driver = driver;
 

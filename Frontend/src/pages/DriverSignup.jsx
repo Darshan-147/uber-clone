@@ -7,10 +7,10 @@ const DriverSignup = () => {
 
   const navigate = useNavigate()
   // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [firstName, setFirstName] = useState("Test");
-  const [lastName, setLastName] = useState("Driver");
-  const [email, setEmail] = useState("test_email@gmail.com");
-  const [password, setPassword] = useState("test_driver");
+  const [firstName, setFirstName] = useState("Shambu");
+  const [lastName, setLastName] = useState("Carwala");
+  const [email, setEmail] = useState("shambhu@gmail.com");
+  const [password, setPassword] = useState("Khataro");
   const [vehicleColor, setVehicleColor] = useState("Purple");
   const [vehiclePlate, setVehiclePlate] = useState("GJ 01 NY 2258");
   const [vehicleCapacity, setVehicleCapacity] = useState("3");
@@ -45,7 +45,8 @@ const DriverSignup = () => {
       const data = response.data;
 
       updateDriver(data.driver);
-      localStorage.setItem('token',data.token)
+      localStorage.setItem("driverToken", data.token);
+      localStorage.removeItem("token");
       navigate("/driver-home");
     }
 
@@ -72,7 +73,7 @@ const DriverSignup = () => {
             submitHandler(e);
           }}
         >
-          <h3 className="text-lg mb-2">Yo, what's your name?</h3>
+          <h3 className="text-lg mb-2">What's your name?</h3>
           <div className="flex gap-4 mb-5">
             <input
               type="text"

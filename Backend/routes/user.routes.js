@@ -15,7 +15,7 @@ router.post(
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters long"),
   ],
-  userController.registerUser
+  userController.registerUser,
 );
 
 router.post(
@@ -26,10 +26,14 @@ router.post(
       .isLength({ min: 6 })
       .withMessage("Password must be atleast 6 characters long"),
   ],
-  userController.loginUser
+  userController.loginUser,
 );
 
-router.get("/profile", authMiddleware.authUser, userController.getUserProfile);
+router.get(
+  "/profile",
+  authMiddleware.authUser,
+  userController.getUserProfile,
+);
 
 router.get("/logout", authMiddleware.authUser, userController.logoutUser);
 

@@ -4,9 +4,8 @@ import axios from "axios";
 import { UserDataContext } from "../context/UserContext";
 
 const UserLogin = () => {
-  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [email, setEmail] = useState("dashu@gmail.com");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("legend@gmail.com");
+  const [password, setPassword] = useState("legendOP");
 
   const navigate = useNavigate();
 
@@ -23,14 +22,15 @@ const UserLogin = () => {
     // To send the response from frontend to backend
     const response = await axios.post(
       `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/login`,
-      existingUser
+      existingUser,
     );
 
     if (response.status === 200) {
       const data = response.data;
 
       setUser(data.user);
-      localStorage.setItem('token',data.token)
+      localStorage.setItem("userToken", data.token);
+      localStorage.removeItem("token");
       navigate("/home");
     }
 
@@ -79,7 +79,7 @@ const UserLogin = () => {
         </form>
         <p>
           New here?{" "}
-          <Link to="/signup" className="text-blue-700">
+          <Link to="/user-signup" className="text-blue-700">
             Create Account
           </Link>{" "}
         </p>

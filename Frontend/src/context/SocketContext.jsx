@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
 export const SocketContext = createContext();
@@ -34,23 +34,24 @@ export const SocketProvider = ({ children }) => {
     setSocket(newSocket);
 
     return () => {
-      if (newSocket) {
-        newSocket.close();
-      }
+      newSocket.off("connect");
+      newSocket.off("connect_error");
+      newSocket.off("disconnect");
     };
   }, []);
 
   // Function to send messages to the server
-  const sendMessage = (eventName, message) => {
-    console.log("Sending message:", message);
-    socket.emit(eventName, message);
-  };
+  const sendMessage = useCallback((eventName, message) => {
+    newSocket.emit(eventName, message);
+  }, []);
 
   // Function to listen for messages from the server
-  const recieveMessage = (eventName, callback) => {
-    console.log("Listening for event:", eventName);
-    socket.on(eventName, callback);
-  };
+  const recieveMessage = useCallback((eventName, callback) => {
+    newSocket.off(eventName, callback);
+    newSocket.on(eventName, callback);
+
+    return () => newSocket.off(eventName, callback);
+  }, []);
 
   const value = {
     socket,

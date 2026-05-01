@@ -9,10 +9,11 @@ import ConfirmRide from "../components/ConfirmRide";
 import LookingForDriver from "../components/LookingForDriver";
 import { SocketContext } from "../context/SocketContext";
 import { UserDataContext } from "../context/UserContext";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-  const [pickup, setPickup] = useState("Ahmedabad, GJ, India");
-  const [destination, setDestination] = useState("Chennai, TN, India");
+  const [pickup, setPickup] = useState("");
+  const [destination, setDestination] = useState("");
   const [panelOpen, setPanelOpen] = useState(false);
   const [vehiclePanel, setVehiclePanel] = useState(false);
   const [confirmRidePanel, setConfirmRidePanel] = useState(false);
@@ -21,20 +22,75 @@ const Home = () => {
   const [activeField, setActiveField] = useState("");
   const [fare, setFare] = useState({});
   const [vehicleType, setVehicleType] = useState("");
+  const [ride, setRide] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   const panelRef = useRef(null);
   const panelCloseRef = useRef(null);
   const vehiclePanelRef = useRef(null);
   const confirmRidePanelRef = useRef(null);
   const vehicleFoundRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  const navigate = useNavigate();
 
   const { sendMessage, recieveMessage } = useContext(SocketContext);
   const { user } = useContext(UserDataContext);
 
   useEffect(() => {
-    console.log(user);
+    if (user?._id) {
+      sendMessage("join", { userType: "user", userId: user._id });
+    }
+  }, [user, sendMessage]);
 
-    sendMessage("join", { userType: "user", userId: user._id });
-  }, []);
+  // Listen for ride acceptance from driver
+  useEffect(() => {
+    const removeAccepted = recieveMessage("ride-accepted", (data) => {
+      console.log("Ride accepted:", data);
+      setRide((currentRide) => ({
+        ...currentRide,
+        ...data,
+        otp: data?.otp || currentRide?.otp,
+      }));
+      setVehicleFound(true);
+    });
+
+    const removeOtpVerified = recieveMessage("otp-verified", (data) => {
+      console.log("OTP verified, ride started:", data);
+      alert("OTP verified! Ride has started.");
+      sessionStorage.setItem("activeRide", JSON.stringify(data?.ride || data));
+      navigate("/riding", { state: { ride: data?.ride || data } });
+    });
+
+    const removeCompleted = recieveMessage("ride-completed", (data) => {
+      console.log("Ride completed:", data);
+      alert("Ride completed! Thank you for using Uber.");
+      sessionStorage.removeItem("activeRide");
+      resetRideState();
+    });
+
+    const removeCancelled = recieveMessage("ride-cancelled", (data) => {
+      console.log("Ride cancelled:", data?.message);
+      alert(`Ride cancelled: ${data?.message || "Ride cancelled"}`);
+      sessionStorage.removeItem("activeRide");
+      resetRideState();
+    });
+
+    return () => {
+      removeAccepted?.();
+      removeOtpVerified?.();
+      removeCompleted?.();
+      removeCancelled?.();
+    };
+  }, [navigate, recieveMessage]);
+
+  const resetRideState = () => {
+    setRide(null);
+    setVehicleFound(false);
+    setConfirmRidePanel(false);
+    setVehiclePanel(false);
+    setPickup("");
+    setDestination("");
+  };
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -47,7 +103,8 @@ const Home = () => {
         return;
       }
 
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("userToken") || localStorage.getItem("token");
       const response = await axios.get(
         `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/maps/get-suggestions`,
         {
@@ -56,7 +113,7 @@ const Home = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.data) {
@@ -65,8 +122,30 @@ const Home = () => {
     } catch (error) {
       console.error(
         "Error fetching suggestions:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
+      setSuggestions([]);
+    }
+  };
+
+  const debouncedFetchSuggestions = (input) => {
+    // Clear previous timeout
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Clear suggestions if input is empty or too short
+    if (!input || input.trim().length === 0) {
+      setSuggestions([]);
+      return;
+    }
+
+    // Only fetch if more than 3 characters
+    if (input.trim().length > 3) {
+      debounceTimerRef.current = setTimeout(() => {
+        fetchSuggestions(input);
+      }, 500); // 500ms debounce delay
+    } else {
       setSuggestions([]);
     }
   };
@@ -84,7 +163,7 @@ const Home = () => {
   const findTrip = async () => {
     try {
       if (!pickup || !destination) {
-        console.error("Pickup and destination are required");
+        alert("Please enter pickup and destination");
         return;
       }
 
@@ -99,10 +178,12 @@ const Home = () => {
             destination: destination.trim(),
           },
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${
+              localStorage.getItem("userToken") || localStorage.getItem("token")
+            }`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       console.log("Fare response:", response.data);
@@ -110,13 +191,20 @@ const Home = () => {
     } catch (error) {
       console.error(
         "Error getting fare:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
+      alert("Failed to fetch fare");
     }
   };
 
   const createRide = async () => {
     try {
+      if (!vehicleType) {
+        alert("Please select a vehicle type");
+        return;
+      }
+
+      setLoading(true);
       const response = await axios.post(
         `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/create-ride`,
         {
@@ -126,19 +214,29 @@ const Home = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${
+              localStorage.getItem("userToken") || localStorage.getItem("token")
+            }`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       console.log("Ride created:", response.data);
+      setRide(response.data);
+      setConfirmRidePanel(false);
+      setVehiclePanel(false);
+      setVehicleFound(true);
+
       return response.data;
     } catch (error) {
       console.error(
         "Error creating ride:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
+      alert("Failed to create ride");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -209,7 +307,7 @@ const Home = () => {
   return (
     <div className="relative h-screen overflow-hidden">
       <img
-        className="w-16 absolute top-5 left-5"
+        className="w-16 absolute top-5 left-5 z-20"
         src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
         alt="Uber Logo"
       />
@@ -229,7 +327,7 @@ const Home = () => {
             onClick={() => {
               setPanelOpen(false);
             }}
-            className="absolute right-5 top-5 font-semibold text-3xl opacity-0"
+            className="absolute right-5 top-5 font-semibold text-3xl opacity-0 cursor-pointer"
           >
             <i className="ri-arrow-down-wide-line"></i>
           </h5>
@@ -244,7 +342,7 @@ const Home = () => {
               }}
               onChange={(e) => {
                 setPickup(e.target.value);
-                fetchSuggestions(e.target.value);
+                debouncedFetchSuggestions(e.target.value);
               }}
               className="bg-[#eee] px-8 py-3 w-full mt-5 rounded-2xl"
               type="text"
@@ -258,7 +356,7 @@ const Home = () => {
               }}
               onChange={(e) => {
                 setDestination(e.target.value);
-                fetchSuggestions(e.target.value);
+                debouncedFetchSuggestions(e.target.value);
               }}
               className="bg-[#eee] px-8 py-3 w-full mt-3 rounded-2xl"
               type="text"
@@ -267,7 +365,7 @@ const Home = () => {
           </form>
           <button
             onClick={findTrip}
-            className="bg-black text-white mt-5 p-3 w-full"
+            className="bg-black text-white mt-5 p-3 w-full rounded-lg font-semibold hover:bg-gray-800"
           >
             Find Trip
           </button>
@@ -309,7 +407,8 @@ const Home = () => {
           image={images}
           createRide={createRide}
           setConfirmRidePanel={setConfirmRidePanel}
-          setVehicleFound={setVehicleFound}
+          setVehiclePanel={setVehiclePanel}
+          loading={loading}
         />
       </div>
       <div
@@ -317,6 +416,7 @@ const Home = () => {
         className="fixed w-full z-10 bottom-0 bg-white px-3 py-8 pt-12 translate-y-full"
       >
         <LookingForDriver
+          ride={ride}
           setVehicleFound={setVehicleFound}
           pickup={pickup}
           destination={destination}

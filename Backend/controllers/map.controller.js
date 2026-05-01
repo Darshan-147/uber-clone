@@ -12,8 +12,7 @@ module.exports.getCoordinates = async (req, res, next) => {
     const coordinates = await mapService.getAddressCoordinates(address);
     res.status(200).json(coordinates);
   } catch (err) {
-    console.log("API j nathi mali");
-    res.status(404).json({ message: "Coordinates not found" });
+    res.status(404).json({ message: err.message || "Coordinates not found" });
   }
 };
 
@@ -28,7 +27,9 @@ module.exports.getDistanceTime = async (req, res, next) => {
     const distanceTime = await mapService.getDistanceTime(origin, destination);
     res.status(200).json(distanceTime);
   } catch (err) {
-    res.status(404).json({ message: "Distance and time not found" });
+    res
+      .status(404)
+      .json({ message: err.message || "Distance and time not found" });
   }
 };
 
@@ -43,6 +44,6 @@ module.exports.getSuggestions = async (req, res, next) => {
     const suggestions = await mapService.getSuggestions(input);
     res.status(200).json(suggestions);
   } catch (err) {
-    res.status(404).json({ message: "Suggestions not found" });
+    res.status(404).json({ message: err.message || "Suggestions not found" });
   }
 };

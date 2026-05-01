@@ -1,5 +1,10 @@
 const driverModel = require("../models/driver.model");
 
+const defaultLocation = [
+  Number(process.env.DEFAULT_DRIVER_LONGITUDE) || 0,
+  Number(process.env.DEFAULT_DRIVER_LATITUDE) || 0,
+];
+
 module.exports.createDriver = async ({
   firstname,
   lastname,
@@ -30,6 +35,10 @@ module.exports.createDriver = async ({
       plate,
       capacity,
       vehicleType,
+    },
+    location: {
+      type: "Point",
+      coordinates: defaultLocation,
     },
   });
 

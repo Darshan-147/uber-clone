@@ -31,7 +31,7 @@ router.post(
 );
 
 router.post(
-  "/login",
+  "/user-login",
   [
     body("email").isEmail().withMessage("Invalid Email"),
     body("password")
@@ -41,8 +41,8 @@ router.post(
   driverController.loginDriver
 );
 
-router.get("/profile", authMiddleware.authDriver, driverController.getDriverProfile);
+router.get("/user-profile", authMiddleware.authDriver, driverController.getDriverProfile);
 
-router.get("/logout", authMiddleware.authDriver, driverController.logoutDriver);
+router.get("/user-logout", authMiddleware.authDriver, driverController.logoutDriver);
 
 module.exports = router;

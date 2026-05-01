@@ -6,12 +6,15 @@ module.exports.getAddressCoordinates = async (address) => {
     throw new Error("Address is required");
   }
   const apiKey = process.env.ORS_MAPS_API;
+  if (!apiKey) {
+    throw new Error("ORS_MAPS_API is not configured");
+  }
   const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(
     address
   )}`;
 
   try {
-    const response = await axios.get(url);
+    const response = await axios.get(url, { timeout: 10000 });
     if (response.data.features && response.data.features.length > 0) {
       const location = response.data.features[0].geometry.coordinates;
       return {
@@ -53,6 +56,7 @@ module.exports.getDistanceTime = async (origin, destination) => {
         Accept:
           "application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
       },
+      timeout: 10000,
     });
 
     if (response.data && response.data.features && response.data.features[0]) {
@@ -67,6 +71,8 @@ module.exports.getDistanceTime = async (origin, destination) => {
           value: properties.segments[0].duration,
           text: `${Math.round(properties.segments[0].duration / 60)} mins`,
         },
+        origin: originCoords,
+        destination: destinationCoords,
       };
     }
 
@@ -87,12 +93,15 @@ module.exports.getSuggestions = async (input) => {
   }
 
   const apiKey = process.env.ORS_MAPS_API;
+  if (!apiKey) {
+    throw new Error("ORS_MAPS_API is not configured");
+  }
   const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${apiKey}&text=${encodeURIComponent(
     input
   )}`;
 
   try {
-    const response = await axios.get(url);
+    const response = await axios.get(url, { timeout: 10000 });
 
     if (response.data.features && response.data.features.length > 0) {
       return response.data.features.map((feature) => ({
@@ -115,6 +124,7 @@ module.exports.getSuggestions = async (input) => {
 module.exports.getDriversInTheRadius = async (lat, lng, radius) => {
   try {
     const drivers = await driverModel.find({
+      status: "active",
       location: {
         $near: {
           $geometry: {

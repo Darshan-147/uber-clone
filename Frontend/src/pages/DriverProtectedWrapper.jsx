@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const DriverProtectedWrapper = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("driverToken") || localStorage.getItem("token");
   const navigate = useNavigate();
   const { driver, setDriver } = useContext(DriverDataContext);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,9 +18,12 @@ const DriverProtectedWrapper = ({ children }) => {
 
     // Fetch driver profile
     axios
-      .get(`${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      .get(
+        `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/user-profile`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
       .then((response) => {
         if (response.status === 200) {
           setDriver(response.data);
@@ -28,6 +32,7 @@ const DriverProtectedWrapper = ({ children }) => {
       })
       .catch((error) => {
         console.log(error);
+        localStorage.removeItem("driverToken");
         localStorage.removeItem("token");
         navigate("/driver-login");
       });

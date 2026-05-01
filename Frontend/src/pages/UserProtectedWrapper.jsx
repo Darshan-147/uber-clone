@@ -4,21 +4,25 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const UserProtectedWrapper = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("userToken") || localStorage.getItem("token");
   const navigate = useNavigate();
   const { user, setUser } = useContext(UserDataContext);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!token) {
-      navigate("/login");
+      navigate("/user-login");
     }
   }, [token]);
 
   axios
-    .get(`${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    .get(
+      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/profile`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
     .then((response) => {
       if (response.status === 200) {
         setUser(response.data);
@@ -27,8 +31,9 @@ const UserProtectedWrapper = ({ children }) => {
     })
     .catch((error) => {
       console.log(error);
+      localStorage.removeItem("userToken");
       localStorage.removeItem("token");
-      navigate("/login");
+      navigate("/user-login");
     });
 
   if (isLoading) {
