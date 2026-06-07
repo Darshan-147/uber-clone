@@ -9,7 +9,6 @@ const LocationSearchPanel = (props) => {
             key={index}
             onClick={() => {
               props.onSuggestionClick(suggestion);
-              props.setPanelOpen(true);
             }}
             className="flex items-center gap-4 border-2 border-white active:border-black rounded-xl p-3 cursor-pointer hover:bg-gray-100"
           >

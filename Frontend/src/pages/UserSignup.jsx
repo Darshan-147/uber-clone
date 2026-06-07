@@ -2,124 +2,132 @@ import React, { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { UserDataContext } from "../context/UserContext";
+import { useToast } from "../context/ToastContext";
 
 const UserSignup = () => {
-  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
-
-  const { user, setUser } = useContext(UserDataContext);
+  const { setUser } = useContext(UserDataContext);
+  const toast = useToast();
 
   const submitHandler = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const newUser = {
-      fullname: {
-        firstname: firstName,
-        lastname: lastName,
-      },
-      email: email,
-      password: password,
-    };
-    // To send the response from frontend to backend
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/register`,
-      newUser,
-    );
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/register`,
+        {
+          fullname: { firstname: firstName, lastname: lastName },
+          email,
+          password,
+        },
+      );
 
-    if (response.status === 201) {
-      const data = response.data;
-
-      setUser(data.user);
-      localStorage.setItem("userToken", data.token);
-      localStorage.removeItem("token");
-      navigate("/home");
+      if (response.status === 201) {
+        const data = response.data;
+        setUser(data.user);
+        localStorage.setItem("userToken", data.token);
+        localStorage.removeItem("token");
+        toast.success("Account created! Welcome to BookMyRide.");
+        navigate("/home");
+      }
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.[0]?.msg ||
+        "Registration failed. Please try again.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    // reset the form after signup
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPassword("");
   };
 
   return (
-    <div className="p-7 h-screen flex flex-col justify-between">
+    <div className="p-7 h-screen overflow-y-auto flex flex-col justify-between">
       <div>
-        <img
-          className="w-14 mb-10"
-          src="https://static-00.iconduck.com/assets.00/uber-icon-2048x2048-1c9pt96a.png"
-        ></img>
-        <form
-          onSubmit={(e) => {
-            submitHandler(e);
-          }}
-        >
-          <h3 className="text-lg mb-2">Yo, what's your name?</h3>
-          <div className="flex gap-4 mb-5">
+        <div className="flex items-center gap-2 mb-8">
+          <div className="bg-black text-white rounded-lg px-3 py-1 font-bold text-base tracking-tight">BMR</div>
+          <span className="font-bold text-xl">BookMyRide</span>
+        </div>
+
+        <h2 className="text-3xl font-bold mb-1">Create Account</h2>
+        <p className="text-gray-500 text-sm mb-5">Join BookMyRide and book rides instantly.</p>
+
+        <form onSubmit={submitHandler}>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm">
+              {error}
+            </div>
+          )}
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <div className="flex gap-3 mb-4">
             <input
               type="text"
               value={firstName}
-              className="bg-gray-200 rounded px-4 py-2 border w-1/2 text-lg placeholder:text-base"
+              className="bg-gray-100 rounded-xl px-4 py-3 border border-gray-200 w-1/2 text-base focus:outline-none focus:ring-2 focus:ring-black"
               placeholder="First name"
-              onChange={(e) => {
-                setFirstName(e.target.value);
-              }}
+              onChange={(e) => setFirstName(e.target.value)}
               required
             />
             <input
               type="text"
               value={lastName}
-              className="bg-gray-200 rounded px-4 py-2 border w-1/2 text-lg placeholder:text-base"
+              className="bg-gray-100 rounded-xl px-4 py-3 border border-gray-200 w-1/2 text-base focus:outline-none focus:ring-2 focus:ring-black"
               placeholder="Last name"
-              onChange={(e) => {
-                setLastName(e.target.value);
-              }}
-              required
+              onChange={(e) => setLastName(e.target.value)}
             />
           </div>
-          <h3 className="text-lg mb-2">What's your email?</h3>
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
+            onChange={(e) => setEmail(e.target.value)}
             type="email"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
+            className="bg-gray-100 rounded-xl px-4 py-3 mb-4 border border-gray-200 w-full text-base focus:outline-none focus:ring-2 focus:ring-black"
             placeholder="email@example.com"
             required
           />
-          <h3 className="text-lg mb-2">Enter password</h3>
+
+          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
+            onChange={(e) => setPassword(e.target.value)}
             type="password"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="password"
+            className="bg-gray-100 rounded-xl px-4 py-3 mb-5 border border-gray-200 w-full text-base focus:outline-none focus:ring-2 focus:ring-black"
+            placeholder="Min. 6 characters"
             required
           />
-          <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-5 border w-full text-lg">
-            Create User Account
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-black text-white font-semibold rounded-xl px-4 py-3 mb-4 w-full text-base disabled:bg-gray-400 hover:bg-gray-800 transition-colors"
+          >
+            {loading ? "Creating account..." : "Create Account"}
           </button>
         </form>
-        <p>
+
+        <p className="text-sm text-center">
           Already have an account?{" "}
-          <Link to="/user-login" className="text-blue-700">
-            Login
-          </Link>{" "}
+          <Link to="/user-login" className="text-green-600 font-semibold">
+            Sign In
+          </Link>
         </p>
       </div>
+
       <div>
-        <p className="text-[11px] leading-tight">
-          By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages,
-          including by automated means, from Uber and its affiliates to the
-          number provided.
+        <p className="text-[11px] text-gray-400 leading-tight mt-4">
+          By proceeding, you consent to receive communications from BookMyRide
+          regarding your account and rides.
         </p>
       </div>
     </div>

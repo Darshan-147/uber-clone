@@ -1,56 +1,53 @@
 import React from "react";
 
-const LookingForDriver = (props) => {
-  const vehicleType = props.ride?.vehicleType || props.vehicleType;
+const LookingForDriver = ({ ride, setVehicleFound, pickup, destination, fare, vehicleType, image, onCancel }) => {
+  const type = ride?.vehicleType || vehicleType;
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => {
-          props.setVehicleFound(false);
-        }}
+        onClick={() => setVehicleFound?.(false)}
         className="absolute w-full text-center top-0 text-gray-300 font-semibold text-3xl"
-        aria-label="Close ride status"
+        aria-label="Close"
       >
         <i className="ri-arrow-down-wide-line"></i>
       </button>
-      <h3 className="text-2xl font-semibold mb-5">
-        {props.ride?.status === "accepted" ? "Driver Accepted" : "Looking for a Driver"}
-      </h3>
 
-      {props.ride?.status === "accepted" && props.ride?.otp && (
-        <div className="mb-5 rounded-lg bg-green-50 border border-green-200 p-4 text-center">
-          <p className="text-sm font-medium text-green-800">
-            Share OTP with driver
-          </p>
-          <p className="text-3xl font-bold tracking-widest text-green-900">
-            {props.ride.otp}
-          </p>
-        </div>
-      )}
+      <h3 className="text-2xl font-semibold mb-2">Looking for a Driver</h3>
+      <p className="text-gray-500 text-sm mb-4">We're finding the best driver near you...</p>
 
-      <div className="flex flex-col justify-between items-center gap-5">
-        <img
-          className="h-24"
-          src={props.image[vehicleType]}
-          alt={vehicleType}
-        />
-        <div className="w-full flex flex-col gap-2">
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-map-pin-2-fill"></i>
-            {props.ride?.pickup || props.pickup}
-          </div>
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-square-fill"></i>
-            {props.ride?.destination || props.destination}
-          </div>
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-bank-card-2-fill"></i>
-            Rs. {props.ride?.fare || props.fare[vehicleType]} only
-          </div>
+      <div className="flex justify-center mb-4">
+        <div className="relative">
+          <img className="h-20 object-contain" src={image?.[type]} alt={type} />
+          <div className="absolute -right-2 -top-2 w-5 h-5 bg-green-500 rounded-full animate-ping"></div>
         </div>
       </div>
+
+      <div className="w-full flex flex-col gap-2 mb-5">
+        <div className="flex gap-3 p-3 rounded-xl bg-gray-50 items-center">
+          <i className="ri-map-pin-2-fill text-green-600"></i>
+          <span className="text-sm">{ride?.pickup || pickup}</span>
+        </div>
+        <div className="flex gap-3 p-3 rounded-xl bg-gray-50 items-center">
+          <i className="ri-square-fill text-black"></i>
+          <span className="text-sm">{ride?.destination || destination}</span>
+        </div>
+        <div className="flex gap-3 p-3 rounded-xl bg-gray-50 items-center">
+          <i className="ri-bank-card-2-fill text-blue-600"></i>
+          <span className="text-sm font-semibold">₹{ride?.fare || fare?.[type]} · Cash</span>
+        </div>
+      </div>
+
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="w-full py-3 rounded-xl border-2 border-red-200 text-red-600 font-semibold hover:bg-red-50 transition-colors"
+        >
+          Cancel Ride
+        </button>
+      )}
     </div>
   );
 };

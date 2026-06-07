@@ -3,51 +3,52 @@ import React from "react";
 const ConfirmRide = (props) => {
   return (
     <div>
-      <h5
-        onClick={() => {
-          props.setConfirmRidePanel(false);
-        }}
-        className="absolute w-full text-center top-0 text-gray-300 font-semibold text-3xl"
+      <button
+        type="button"
+        onClick={() => props.setConfirmRidePanel(false)}
+        className="absolute w-full text-center top-0 text-gray-300 font-semibold text-3xl cursor-pointer"
       >
         <i className="ri-arrow-down-wide-line"></i>
-      </h5>
-      <h3 className="text-2xl font-semibold mb-5">Confirm Your Ride</h3>
+      </button>
 
-      <div className="flex justify-between">
-        <img
-          className="h-24"
-          src={props.image[props.vehicleType]}
-          alt="UberGo"
-        />
-        <div className="text-right flex justify-center items-center">
-          <h4 className="text-xl font-semibold">Travelling by {props.vehicleType}</h4>
+      <h3 className="text-2xl font-bold mb-1">Confirm Your Ride</h3>
+      <p className="text-gray-500 text-sm mb-4">Review your trip details before booking.</p>
+
+      <div className="flex items-center justify-between mb-4 bg-gray-50 rounded-2xl p-3">
+        <img className="h-16 object-contain" src={props.image[props.vehicleType]} alt={props.vehicleType} />
+        <div className="text-right">
+          <h4 className="text-lg font-bold capitalize">{props.vehicleType}</h4>
+          <p className="text-2xl font-black text-green-600">₹{props.fare[props.vehicleType]}</p>
+          <p className="text-xs text-gray-500">Cash payment</p>
         </div>
       </div>
 
-      <div className="flex flex-col justify-between items-center gap-5">
-        <div className="w-full flex flex-col gap-2">
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-map-pin-2-fill"></i>
-            {props.pickup}
-          </div>
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-square-fill"></i>
-            {props.destination}
-          </div>
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-bank-card-2-fill"></i>₹{" "}
-            {props.fare[props.vehicleType]} only
-          </div>
+      <div className="flex flex-col gap-2 mb-5">
+        <div className="flex gap-3 p-3 rounded-xl bg-gray-50 items-center">
+          <i className="ri-map-pin-2-fill text-green-600"></i>
+          <span className="text-sm">{props.pickup}</span>
         </div>
+        <div className="flex gap-3 p-3 rounded-xl bg-gray-50 items-center">
+          <i className="ri-square-fill text-black"></i>
+          <span className="text-sm">{props.destination}</span>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
         <button
           type="button"
-          onClick={async () => {
-            await props.createRide();
-          }}
-          disabled={props.loading}
-          className="bg-green-400 p-3 rounded-lg w-full font-semibold text-white"
+          onClick={() => { props.setConfirmRidePanel(false); props.setVehiclePanel(true); }}
+          className="flex-1 border-2 border-gray-200 p-3 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          {props.loading ? "Confirming..." : "Confirm"}
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={async () => await props.createRide()}
+          disabled={props.loading}
+          className="flex-2 bg-black text-white p-3 rounded-xl font-semibold disabled:bg-gray-400 hover:bg-gray-800 transition-colors px-8"
+        >
+          {props.loading ? "Booking..." : "Confirm Ride"}
         </button>
       </div>
     </div>

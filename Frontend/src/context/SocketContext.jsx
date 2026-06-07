@@ -47,9 +47,7 @@ export const SocketProvider = ({ children }) => {
 
   // Function to listen for messages from the server
   const recieveMessage = useCallback((eventName, callback) => {
-    newSocket.off(eventName, callback);
     newSocket.on(eventName, callback);
-
     return () => newSocket.off(eventName, callback);
   }, []);
 

@@ -14,6 +14,7 @@ import ConfirmRidePopUp from "../components/ConfirmRidePopUp";
 import { DriverDataContext } from "../context/DriverContext";
 import driverImage from "../../assets/images/driverImage.jpeg";
 import { SocketContext } from "../context/SocketContext";
+import { useToast } from "../context/ToastContext";
 import axios from "axios";
 
 const getCurrentLocation = () =>
@@ -22,13 +23,8 @@ const getCurrentLocation = () =>
       reject(new Error("Location access is not supported by this browser."));
       return;
     }
-
     navigator.geolocation.getCurrentPosition(
-      (position) =>
-        resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        }),
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
       () => reject(new Error("Allow location access to receive nearby rides.")),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
     );
@@ -40,24 +36,19 @@ const DriverHome = () => {
   const [availableRides, setAvailableRides] = useState([]);
   const [selectedRide, setSelectedRide] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({
-    earnings: 0,
-    totalDistance: 0,
-    rides: 0,
-  });
+  const [stats, setStats] = useState({ earnings: 0, totalDistance: 0, rides: 0 });
 
   const ridePopUpRef = useRef(null);
   const confirmRidePopUpRef = useRef(null);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const { sendMessage, recieveMessage } = useContext(SocketContext);
   const { driver } = useContext(DriverDataContext);
 
   const authHeaders = useMemo(
     () => ({
-      Authorization: `Bearer ${
-        localStorage.getItem("driverToken") || localStorage.getItem("token")
-      }`,
+      Authorization: `Bearer ${localStorage.getItem("driverToken") || localStorage.getItem("token")}`,
       "Content-Type": "application/json",
     }),
     [],
@@ -72,24 +63,18 @@ const DriverHome = () => {
 
       const response = await axios.get(
         `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/get-available-rides`,
-        {
-          params: location,
-          headers: authHeaders,
-        },
+        { params: location, headers: authHeaders },
       );
 
       const rides = response.data || [];
       setAvailableRides(rides);
-
-      if (openPanel || rides.length > 0) {
-        setRidePopUp(true);
-      }
-
+      if (openPanel || rides.length > 0) setRidePopUp(true);
       return rides;
     },
     [authHeaders],
   );
 
+  // Join socket and start location tracking
   useEffect(() => {
     if (!driver?._id) return;
 
@@ -107,14 +92,10 @@ const DriverHome = () => {
         });
 
         if (refreshRides) {
-          await fetchAvailableRidesForLocation({
-            latitude,
-            longitude,
-            openPanel: false,
-          });
+          await fetchAvailableRidesForLocation({ latitude, longitude, openPanel: false });
         }
-      } catch (error) {
-        console.warn(error.message);
+      } catch (err) {
+        console.warn(err.message);
       }
     };
 
@@ -132,16 +113,17 @@ const DriverHome = () => {
     };
   }, [driver, fetchAvailableRidesForLocation, recieveMessage, sendMessage]);
 
+  // Listen for new ride broadcasts
   useEffect(() => {
     const handleNewRide = (ride) => {
-      const incomingRide = ride?.data || ride;
-      if (!incomingRide?._id) return;
-
+      const incoming = ride?.data || ride;
+      if (!incoming?._id) return;
       setAvailableRides((prev) => {
-        const exists = prev.some((item) => item._id === incomingRide._id);
-        return exists ? prev : [incomingRide, ...prev];
+        const exists = prev.some((r) => r._id === incoming._id);
+        return exists ? prev : [incoming, ...prev];
       });
       setRidePopUp(true);
+      toast.info("New ride request nearby!");
     };
 
     const removeNewRide = recieveMessage("new-ride", handleNewRide);
@@ -151,6 +133,7 @@ const DriverHome = () => {
     const removeCancelled = recieveMessage("ride-cancelled", () => {
       setSelectedRide(null);
       setConfirmRidePopUp(false);
+      toast.warning("The rider cancelled the ride.");
     });
 
     return () => {
@@ -158,45 +141,37 @@ const DriverHome = () => {
       removeNotification?.();
       removeCancelled?.();
     };
-  }, [recieveMessage]);
+  }, [recieveMessage, toast]);
 
+  // Load active/completed rides on mount
   useEffect(() => {
     const loadDriverState = async () => {
       try {
-        const [activeResponse, completedResponse] = await Promise.all([
+        const [activeRes, completedRes] = await Promise.all([
           axios.get(
             `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/get-driver-rides`,
-            {
-              params: { status: "accepted" },
-              headers: authHeaders,
-            },
+            { params: { status: "accepted" }, headers: authHeaders },
           ),
           axios.get(
             `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/rides/get-driver-rides`,
-            {
-              params: { status: "completed" },
-              headers: authHeaders,
-            },
+            { params: { status: "completed" }, headers: authHeaders },
           ),
         ]);
 
-        const acceptedRide = activeResponse.data?.[0];
+        const acceptedRide = activeRes.data?.[0];
         if (acceptedRide) {
           setSelectedRide(acceptedRide);
           setConfirmRidePopUp(true);
         }
 
-        const completedRides = completedResponse.data || [];
+        const completedRides = completedRes.data || [];
         setStats({
-          earnings: completedRides.reduce((sum, ride) => sum + (ride.fare || 0), 0),
-          totalDistance: completedRides.reduce(
-            (sum, ride) => sum + (ride.distance || 0),
-            0,
-          ),
+          earnings: completedRides.reduce((sum, r) => sum + (r.fare || 0), 0),
+          totalDistance: completedRides.reduce((sum, r) => sum + (r.distance || 0), 0),
           rides: completedRides.length,
         });
-      } catch (error) {
-        console.warn("Could not load driver ride state", error.response?.data);
+      } catch (err) {
+        console.warn("Could not load driver ride state", err.response?.data);
       }
     };
 
@@ -206,9 +181,10 @@ const DriverHome = () => {
   const fetchAvailableRides = async () => {
     try {
       setLoading(true);
-      await fetchAvailableRidesForLocation({ openPanel: true });
-    } catch (error) {
-      alert(error.response?.data?.message || error.message);
+      const rides = await fetchAvailableRidesForLocation({ openPanel: true });
+      if (rides.length === 0) toast.info("No rides nearby right now. Try again shortly.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Could not fetch rides.");
     } finally {
       setLoading(false);
     }
@@ -222,13 +198,13 @@ const DriverHome = () => {
         { rideId: ride._id },
         { headers: authHeaders },
       );
-
       setSelectedRide(response.data);
-      setAvailableRides((prev) => prev.filter((item) => item._id !== ride._id));
+      setAvailableRides((prev) => prev.filter((r) => r._id !== ride._id));
       setRidePopUp(false);
       setConfirmRidePopUp(true);
-    } catch (error) {
-      alert(error.response?.data?.message || "Failed to accept ride");
+      toast.success("Ride accepted! Collect the OTP from the rider.");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to accept ride.");
     } finally {
       setLoading(false);
     }
@@ -248,18 +224,20 @@ const DriverHome = () => {
 
   return (
     <div className="h-screen overflow-hidden">
-      <img
-        className="w-16 absolute top-5 left-5 z-20"
-        src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
-        alt="Uber Logo"
-      />
+      {/* Header */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+        <div className="bg-green-600 text-white rounded-lg px-3 py-1 font-bold text-sm tracking-tight shadow">BMR</div>
+        <span className="font-bold text-white text-base drop-shadow-lg">BookMyRide</span>
+      </div>
+
       <Link
         to="/driver-logout"
-        className="fixed top-2 right-2 z-20 rounded-full bg-white py-2 px-4 hover:bg-gray-100"
+        className="fixed top-3 right-3 z-20 rounded-full bg-white py-2 px-4 text-sm font-semibold shadow hover:bg-gray-100"
       >
-        <i className="ri-logout-box-r-fill"></i> Logout
+        <i className="ri-logout-box-r-line mr-1"></i>Logout
       </Link>
 
+      {/* Map */}
       <div className="h-3/5">
         <img
           className="h-full w-full object-cover"
@@ -268,54 +246,59 @@ const DriverHome = () => {
         />
       </div>
 
-      <div className="h-2/5 p-4 flex flex-col gap-5">
+      {/* Driver Dashboard */}
+      <div className="h-2/5 p-4 flex flex-col gap-4 bg-white">
         <div className="flex justify-between items-center">
-          <img
-            className="h-16 w-16 rounded-full object-cover"
-            src={driverImage}
-            alt="Driver"
-          />
-          <div className="flex flex-col items-end">
-            <h4 className="text-xl font-medium">
-              {[driver?.fullname?.firstname, driver?.fullname?.lastname]
-                .filter(Boolean)
-                .join(" ") || "Driver"}
-            </h4>
-            <h4 className="text-lg font-medium">
-              Rs. {stats.earnings.toFixed(2)}
-            </h4>
-            <p className="text-sm font-semibold text-gray-600">Earned</p>
+          <div className="flex items-center gap-3">
+            <img
+              className="h-14 w-14 rounded-full object-cover border-2 border-green-500"
+              src={driverImage}
+              alt="Driver"
+            />
+            <div>
+              <h4 className="text-lg font-bold leading-tight">
+                {[driver?.fullname?.firstname, driver?.fullname?.lastname].filter(Boolean).join(" ") || "Driver"}
+              </h4>
+              <p className="text-xs text-gray-500">{driver?.vehicle?.plate || "Vehicle"}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <h4 className="text-2xl font-bold text-green-600">₹{stats.earnings.toFixed(0)}</h4>
+            <p className="text-xs text-gray-500">Total Earned</p>
           </div>
         </div>
 
-        <div className="flex justify-around bg-gray-100 rounded-lg p-3">
+        <div className="flex justify-around bg-gray-50 rounded-2xl p-3">
           <div className="text-center">
-            <i className="ri-speed-up-fill text-2xl"></i>
-            <h5 className="font-bold">
-              {(stats.totalDistance / 1000).toFixed(1)} km
-            </h5>
-            <p className="text-xs">Completed Distance</p>
+            <i className="ri-route-line text-xl text-green-600"></i>
+            <h5 className="font-bold text-sm">{(stats.totalDistance / 1000).toFixed(1)} km</h5>
+            <p className="text-xs text-gray-500">Distance</p>
           </div>
+          <div className="w-px bg-gray-200"></div>
           <div className="text-center">
-            <i className="ri-booklet-line text-2xl"></i>
-            <h5 className="font-bold">{stats.rides}</h5>
-            <p className="text-xs">Rides Completed</p>
+            <i className="ri-taxi-line text-xl text-green-600"></i>
+            <h5 className="font-bold text-sm">{stats.rides}</h5>
+            <p className="text-xs text-gray-500">Rides Done</p>
+          </div>
+          <div className="w-px bg-gray-200"></div>
+          <div className="text-center">
+            <i className="ri-star-fill text-xl text-yellow-500"></i>
+            <h5 className="font-bold text-sm">4.9</h5>
+            <p className="text-xs text-gray-500">Rating</p>
           </div>
         </div>
 
         <button
           onClick={fetchAvailableRides}
           disabled={loading}
-          className="bg-green-500 hover:bg-green-600 disabled:bg-gray-400 p-3 rounded-lg w-full font-semibold text-white transition-colors"
+          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 p-3 rounded-2xl w-full font-semibold text-white transition-colors"
         >
-          {loading ? "Loading..." : "Check for Rides"}
+          {loading ? "Searching..." : "Check for Rides"}
         </button>
       </div>
 
-      <div
-        ref={ridePopUpRef}
-        className="fixed w-full z-30 bottom-0 bg-white px-3 py-8 translate-y-full"
-      >
+      {/* Available Rides Popup */}
+      <div ref={ridePopUpRef} className="fixed w-full z-30 bottom-0 bg-white px-3 py-8 translate-y-full rounded-t-3xl shadow-xl">
         <RidePopUp
           rides={availableRides}
           onAcceptRide={acceptRide}
@@ -324,10 +307,8 @@ const DriverHome = () => {
         />
       </div>
 
-      <div
-        ref={confirmRidePopUpRef}
-        className="fixed h-screen w-full z-40 bottom-0 bg-white px-3 py-8 translate-y-full"
-      >
+      {/* OTP Verification Popup */}
+      <div ref={confirmRidePopUpRef} className="fixed h-screen w-full z-40 bottom-0 bg-white px-3 py-8 translate-y-full rounded-t-3xl shadow-xl">
         <ConfirmRidePopUp
           ride={selectedRide}
           onClose={() => setConfirmRidePopUp(false)}
