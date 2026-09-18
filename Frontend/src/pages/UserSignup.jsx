@@ -1,128 +1,51 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { UserDataContext } from "../context/UserContext";
+import uberLogo from "../../assets/images/uber_logo.png";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
 
 const UserSignup = () => {
-  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   const navigate = useNavigate();
+  const { setUser } = useContext(UserDataContext);
+  const [form, setForm] = useState({ firstname: "", lastname: "", email: "", password: "" });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const update = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const { user, setUser } = useContext(UserDataContext);
-
-  const submitHandler = async (e) => {
-    e.preventDefault();
-
-    const newUser = {
-      fullname: {
-        firstname: firstName,
-        lastname: lastName,
-      },
-      email: email,
-      password: password,
-    };
-    // To send the response from frontend to backend
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/register`,
-      newUser
-    );
-
-    if (response.status === 201) {
-      const data = response.data;
-
-      setUser(data.user);
-      localStorage.setItem('token',data.token)
+  const submitHandler = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      const { data } = await axios.post(`${API_URL}/api/users/register`, {
+        fullname: { firstname: form.firstname, lastname: form.lastname },
+        email: form.email,
+        password: form.password,
+      });
+      localStorage.setItem("userToken", data.data.token);
+      setUser(data.data.user);
       navigate("/home");
+    } catch (requestError) {
+      setError(requestError.response?.data?.error?.message || "Unable to create your account.");
+    } finally {
+      setSubmitting(false);
     }
-
-    // reset the form after signup
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPassword("");
   };
 
-  return (
-    <div className="p-7 h-screen flex flex-col justify-between">
-      <div>
-        <img
-          className="w-14 mb-10"
-          src="https://static-00.iconduck.com/assets.00/uber-icon-2048x2048-1c9pt96a.png"
-        ></img>
-        <form
-          onSubmit={(e) => {
-            submitHandler(e);
-          }}
-        >
-          <h3 className="text-lg mb-2">Yo, what's your name?</h3>
-          <div className="flex gap-4 mb-5">
-            <input
-              type="text"
-              value={firstName}
-              className="bg-gray-200 rounded px-4 py-2 border w-1/2 text-lg placeholder:text-base"
-              placeholder="First name"
-              onChange={(e) => {
-                setFirstName(e.target.value);
-              }}
-              required
-            />
-            <input
-              type="text"
-              value={lastName}
-              className="bg-gray-200 rounded px-4 py-2 border w-1/2 text-lg placeholder:text-base"
-              placeholder="Last name"
-              onChange={(e) => {
-                setLastName(e.target.value);
-              }}
-              required
-            />
-          </div>
-          <h3 className="text-lg mb-2">What's your email?</h3>
-          <input
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-            type="email"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="email@example.com"
-            required
-          />
-          <h3 className="text-lg mb-2">Enter password</h3>
-          <input
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
-            type="password"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="password"
-            required
-          />
-          <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-5 border w-full text-lg">
-            Create User Account
-          </button>
-        </form>
-        <p>
-          Already have an account?{" "}
-          <Link to="/login" className="text-blue-700">
-            Login
-          </Link>{" "}
-        </p>
-      </div>
-      <div>
-        <p className="text-[11px] leading-tight">
-          By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages,
-          including by automated means, from Uber and its affiliates to the
-          number provided.
-        </p>
-      </div>
-    </div>
-  );
+  return <main className="min-h-screen p-7">
+    <img className="mb-10 w-14" src={uberLogo} alt="Uber" />
+    <h1 className="mb-6 text-2xl font-bold">Create your rider account</h1>
+    <form onSubmit={submitHandler} className="space-y-4">
+      <div className="flex gap-3"><input value={form.firstname} onChange={update("firstname")} className="w-1/2 rounded border bg-gray-100 p-3" placeholder="First name" minLength="3" required /><input value={form.lastname} onChange={update("lastname")} className="w-1/2 rounded border bg-gray-100 p-3" placeholder="Last name" minLength="3" required /></div>
+      <input value={form.email} onChange={update("email")} type="email" className="w-full rounded border bg-gray-100 p-3" placeholder="email@example.com" required />
+      <input value={form.password} onChange={update("password")} type="password" className="w-full rounded border bg-gray-100 p-3" placeholder="Password (6+ characters)" minLength="6" required />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <button disabled={submitting} className="w-full rounded bg-black p-3 font-semibold text-white disabled:opacity-60">{submitting ? "Creating…" : "Create account"}</button>
+    </form>
+    <p className="mt-5">Already have an account? <Link to="/login" className="text-blue-700">Sign in</Link></p>
+  </main>;
 };
 
 export default UserSignup;

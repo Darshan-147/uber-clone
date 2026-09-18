@@ -1,43 +1,36 @@
-import React, { useContext, useEffect, useState } from "react";
-import { DriverDataContext } from "../context/DriverContext";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { DriverDataContext } from "../context/DriverContext";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
 
 const DriverProtectedWrapper = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("driverToken");
   const navigate = useNavigate();
-  const { driver, setDriver } = useContext(DriverDataContext);
+  const { updateDriver } = useContext(DriverDataContext);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!token) {
-      navigate("/driver-login");
+      navigate("/driver-login", { replace: true });
       return;
     }
 
-    // Fetch driver profile
-    axios
-      .get(`${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
+    let active = true;
+    axios.get(`${API_URL}/api/drivers/profile`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => active && updateDriver(data.data.driver))
+      .catch(() => {
+        localStorage.removeItem("driverToken");
+        if (active) navigate("/driver-login", { replace: true });
       })
-      .then((response) => {
-        if (response.status === 200) {
-          setDriver(response.data);
-          setIsLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-        localStorage.removeItem("token");
-        navigate("/driver-login");
-      });
-  }, [token, navigate, setDriver]); // Added proper dependencies
+      .finally(() => active && setIsLoading(false));
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+    return () => { active = false; };
+  }, [navigate, token, updateDriver]);
 
-  return <>{children}</>;
+  if (isLoading) return <div className="p-6">Loading your driver profile…</div>;
+  return children;
 };
 
 export default DriverProtectedWrapper;

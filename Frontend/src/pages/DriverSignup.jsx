@@ -1,182 +1,31 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { DriverDataContext } from "../context/DriverContext";
 import axios from "axios";
+import { DriverDataContext } from "../context/DriverContext";
+import uberLogo from "../../assets/images/uber_logo.png";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
+const emptyForm = { firstname: "", lastname: "", email: "", password: "", color: "", plate: "", capacity: "", vehicleType: "" };
 
 const DriverSignup = () => {
-
-  const navigate = useNavigate()
-  // This is necessary because react won't understand what I am typing otherwise. It is called two-way binding.
-  const [firstName, setFirstName] = useState("Test");
-  const [lastName, setLastName] = useState("Driver");
-  const [email, setEmail] = useState("test_email@gmail.com");
-  const [password, setPassword] = useState("test_driver");
-  const [vehicleColor, setVehicleColor] = useState("Purple");
-  const [vehiclePlate, setVehiclePlate] = useState("GJ 01 NY 2258");
-  const [vehicleCapacity, setVehicleCapacity] = useState("3");
-  const [vehicleType, setVehicleType] = useState("");
-
-  const { driver, updateDriver } = useContext(DriverDataContext);
-
-  const submitHandler = async (e) => {
-    e.preventDefault();
-
-    const newDriver = {
-      fullname: {
-        firstname: firstName,
-        lastname: lastName,
-      },
-      email: email,
-      password: password,
-      vehicle: {
-        color: vehicleColor,
-        plate: vehiclePlate,
-        capacity: vehicleCapacity,
-        vehicleType: vehicleType,
-      },
-    };
-
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/register`,
-      newDriver
-    );
-
-    if (response.status === 201) {
-      const data = response.data;
-
-      updateDriver(data.driver);
-      localStorage.setItem('token',data.token)
-      navigate("/driver-home");
-    }
-
-    // reset the form after signup
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPassword("");
-    setVehicleColor("");
-    setVehiclePlate("");
-    setVehicleCapacity("");
-    setVehicleType("");
+  const navigate = useNavigate();
+  const { updateDriver } = useContext(DriverDataContext);
+  const [form, setForm] = useState(emptyForm);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const update = (field) => (event) => setForm((current) => ({ ...current, [field]: event.target.value }));
+  const submit = async (event) => {
+    event.preventDefault(); setSubmitting(true); setError("");
+    try {
+      const { data } = await axios.post(`${API_URL}/api/drivers/register`, { fullname: { firstname: form.firstname, lastname: form.lastname }, email: form.email, password: form.password, vehicle: { color: form.color, plate: form.plate, capacity: Number(form.capacity), vehicleType: form.vehicleType } });
+      localStorage.setItem("driverToken", data.data.token); updateDriver(data.data.driver); navigate("/driver-home");
+    } catch (requestError) {
+      setError(requestError.response?.data?.error?.message || "Unable to register this driver.");
+    } finally { setSubmitting(false); }
   };
-
-  return (
-    <div className="p-7 h-screen flex flex-col justify-between">
-      <div>
-        <img
-          className="w-14 mb-10"
-          src="https://freelogopng.com/images/all_img/1659761425uber-driver-logo-png.png"
-        ></img>
-        <form
-          onSubmit={(e) => {
-            submitHandler(e);
-          }}
-        >
-          <h3 className="text-lg mb-2">Yo, what's your name?</h3>
-          <div className="flex gap-4 mb-5">
-            <input
-              type="text"
-              value={firstName}
-              className="bg-gray-200 rounded px-4 py-2 border w-1/2 text-lg placeholder:text-base"
-              placeholder="First name"
-              onChange={(e) => {
-                setFirstName(e.target.value);
-              }}
-              required
-            />
-            <input
-              type="text"
-              value={lastName}
-              className="bg-gray-200 rounded px-4 py-2 border w-1/2 text-lg placeholder:text-base"
-              placeholder="Last name"
-              onChange={(e) => {
-                setLastName(e.target.value);
-              }}
-              required
-            />
-          </div>
-          <h3 className="text-lg mb-2">What's your email?</h3>
-          <input
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-            type="email"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="email@example.com"
-            required
-          />
-          <h3 className="text-lg mb-2">Enter password</h3>
-          <input
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
-            type="password"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="password"
-            required
-          />
-
-          <h3 className="text-lg mb-2">Vehicle Color</h3>
-          <input
-            value={vehicleColor}
-            onChange={(e) => setVehicleColor(e.target.value)}
-            type="text"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="Enter vehicle color"
-            required
-          />
-          <h3 className="text-lg mb-2">Vehicle Plate Number</h3>
-          <input
-            value={vehiclePlate}
-            onChange={(e) => setVehiclePlate(e.target.value)}
-            type="text"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="Enter plate number"
-            required
-          />
-          <h3 className="text-lg mb-2">Vehicle Capacity</h3>
-          <input
-            value={vehicleCapacity}
-            onChange={(e) => setVehicleCapacity(e.target.value)}
-            type="number"
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg placeholder:text-base"
-            placeholder="Enter vehicle capacity"
-            required
-          />
-          <h3 className="text-lg mb-2">Vehicle Type</h3>
-          <select
-            value={vehicleType}
-            onChange={(e) => setVehicleType(e.target.value)}
-            className="bg-gray-200 rounded px-4 py-2 mb-5 border w-full text-lg"
-            required
-          >
-            <option value="">Select vehicle type</option>
-            <option value="car">Car</option>
-            <option value="auto">Auto</option>
-            <option value="motorcycle">Motorcycle</option>
-          </select>
-          <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-5 border w-full text-lg">
-            Create Driver Account
-          </button>
-        </form>
-        <p>
-          Already have an account?{" "}
-          <Link to="/driver-login" className="text-blue-700">
-            Login
-          </Link>{" "}
-        </p>
-      </div>
-      <div>
-        <p className="text-[11px] mt-3 leading-tight">
-          By proceeding, you consent to get calls, WhatsApp or SMS/RCS messages,
-          including by automated means, from Uber and its affiliates to the
-          number provided.
-        </p>
-      </div>
-    </div>
-  );
+  return <main className="min-h-screen p-7"><img className="mb-10 w-14" src={uberLogo} alt="Uber" /><h1 className="mb-6 text-2xl font-bold">Register as a driver</h1>
+    <form onSubmit={submit} className="space-y-4"><div className="flex gap-3"><input value={form.firstname} onChange={update("firstname")} className="w-1/2 rounded border bg-gray-100 p-3" placeholder="First name" minLength="3" required /><input value={form.lastname} onChange={update("lastname")} className="w-1/2 rounded border bg-gray-100 p-3" placeholder="Last name" minLength="3" required /></div><input value={form.email} onChange={update("email")} type="email" className="w-full rounded border bg-gray-100 p-3" placeholder="Email" required /><input value={form.password} onChange={update("password")} type="password" className="w-full rounded border bg-gray-100 p-3" placeholder="Password (6+ characters)" minLength="6" required /><input value={form.color} onChange={update("color")} className="w-full rounded border bg-gray-100 p-3" placeholder="Vehicle color" minLength="3" required /><input value={form.plate} onChange={update("plate")} className="w-full rounded border bg-gray-100 p-3" placeholder="Vehicle plate" minLength="3" required /><input value={form.capacity} onChange={update("capacity")} type="number" min="1" className="w-full rounded border bg-gray-100 p-3" placeholder="Capacity" required /><select value={form.vehicleType} onChange={update("vehicleType")} className="w-full rounded border bg-gray-100 p-3" required><option value="">Vehicle type</option><option value="car">Car</option><option value="auto">Auto</option><option value="motorcycle">Motorcycle</option></select>{error && <p className="text-sm text-red-600">{error}</p>}<button disabled={submitting} className="w-full rounded bg-black p-3 font-semibold text-white disabled:opacity-60">{submitting ? "Creating…" : "Create driver account"}</button></form>
+    <p className="mt-5">Already registered? <Link to="/driver-login" className="text-blue-700">Sign in</Link></p></main>;
 };
 
 export default DriverSignup;

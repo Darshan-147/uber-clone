@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { VEHICLE_TYPES } = require("../utils/ride.constants");
 
 const driverSchema = new mongoose.Schema({
   fullname: {
@@ -34,8 +35,9 @@ const driverSchema = new mongoose.Schema({
   // whether the driver can give rides or not
   status: {
     type: String,
-    enum: ["active", "inactive"],
-    default: "inactive",
+    enum: ["available", "busy", "offline"],
+    default: "offline",
+    index: true,
   },
 
   vehicle: {
@@ -52,12 +54,12 @@ const driverSchema = new mongoose.Schema({
     capacity: {
       type: Number,
       required: true,
-      minLength: [1, "Capacity must be of at least 1 passenger"],
+      min: [1, "Capacity must be at least 1 passenger"],
     },
     vehicleType: {
       type: String,
       required: true,
-      enum: ["car", "motorcycle", "auto"],
+      enum: VEHICLE_TYPES,
     },
   },
 
@@ -65,19 +67,25 @@ const driverSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['Point'],
-      default: 'Point'
     },
     coordinates: {
       type: [Number],  // [longitude, latitude]
-      required: true
+      required: false,
     }
+  },
+}, { timestamps: true });
+
+driverSchema.index({ location: "2dsphere", status: 1, "vehicle.vehicleType": 1 });
+driverSchema.set("toJSON", {
+  transform: (document, returned) => {
+    delete returned.password;
+    delete returned.__v;
+    return returned;
   },
 });
 
-driverSchema.index({ location: "2dsphere" });
-
 driverSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ _id: this._id, role: "driver" }, process.env.JWT_SECRET, {
     expiresIn: "24h",
   });
   return token;
@@ -91,6 +99,6 @@ driverSchema.statics.hashPassword = async function (password) {
   return await bcrypt.hash(password, 10);
 };
 
-const driverModel = mongoose.model("drivers", driverSchema);
+const driverModel = mongoose.model("Driver", driverSchema, "drivers");
 
 module.exports = driverModel;

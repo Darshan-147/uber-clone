@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import { createContext, useCallback, useMemo, useState } from "react";
 
 export const DriverDataContext = createContext();
 
@@ -8,32 +8,24 @@ const DriverContext = ({ children }) => {
     const savedDriver = localStorage.getItem("driverData");
     return savedDriver ? JSON.parse(savedDriver) : null;
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const updateDriver = (driverData) => {
+  const updateDriver = useCallback((driverData) => {
     // Save to localStorage and update state
     localStorage.setItem("driverData", JSON.stringify(driverData));
     setDriver(driverData);
-  };
+  }, []);
 
   
-  const clearDriver = () => {
-    console.log("Clearing driver data"); // Debug log
+  const clearDriver = useCallback(() => {
     localStorage.removeItem("driverData");
     setDriver(null);
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     driver,
     setDriver,
-    loading,
-    setLoading,
-    error,
-    setError,
     updateDriver,
     clearDriver,
-  };
+  }), [driver, updateDriver, clearDriver]);
 
   return (
     <DriverDataContext.Provider value={value}>

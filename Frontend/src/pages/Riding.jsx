@@ -1,49 +1,39 @@
-import React from "react";
+import { useContext, useEffect, useState } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
+import { SocketContext } from "../context/SocketContext";
+import MapView from "../components/MapView";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
 
 const Riding = () => {
-  return (
-    <div className="h-screen">
-      <Link to={"/home"} className="fixed top-2 right-2 rounded-full bg-white py-1 px-2">
-        <i className="ri-home-3-fill"></i>
-      </Link>
-      <div className="h-1/2">
-        <img
-          className="h-full w-full object-cover"
-          src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif"
-          alt="Uber map"
-        />
-      </div>
-      <div className="h-1/2 p-4 flex flex-col justify-between">
-        <div className="flex items-center justify-between">
-          <img
-            className="h-16"
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT4AGLOTGHSbWFi3XP-8x2dDD63dBBl3se-tQ&s"
-            alt="UberGo"
-          />
-          <div className="text-right">
-            <h2 className="text-lg font-bold">Ramu</h2>
-            <h4 className="text-xl font-semibold -mt-2 -mb-1">GJ 01 NY 2258</h4>
-            <p className="text-sm text-gray-600">Jaguar</p>
-          </div>
-        </div>
+  const { socket } = useContext(SocketContext);
+  const [ride, setRide] = useState(null);
+  const [error, setError] = useState("");
 
-        <div className="flex flex-col justify-between items-center gap-5">
-          <div className="w-full flex flex-col gap-2">
-            <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-              <i className="ri-square-fill"></i>Destination
-            </div>
-            <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-              <i className="ri-bank-card-2-fill"></i>Rokda
-            </div>
-          </div>
-        </div>
-        <button className="bg-green-400 p-3 mt-5 rounded-lg w-full font-semibold text-white">
-          Make a Payment
-        </button>
-      </div>
-    </div>
-  );
+  useEffect(() => {
+    const rideId = localStorage.getItem("activeUserRide");
+    if (!rideId) { setError("There is no active ride."); return undefined; }
+    axios.get(`${API_URL}/api/rides/${rideId}`, { headers: { Authorization: `Bearer ${localStorage.getItem("userToken")}` } })
+      .then(({ data }) => setRide(data.data.ride))
+      .catch(() => setError("Could not load this ride."));
+    return undefined;
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+    const updateRide = ({ ride: updated }) => updated && setRide((current) => ({ ...updated, otp: updated.otp || current?.otp }));
+    const updateLocation = ({ location }) => setRide((current) => current ? { ...current, driver: { ...current.driver, location } } : current);
+    socket.on("ride-status-updated", updateRide);
+    socket.on("ride-completed", updateRide);
+    socket.on("driver-location-updated", updateLocation);
+    return () => { socket.off("ride-status-updated", updateRide); socket.off("ride-completed", updateRide); socket.off("driver-location-updated", updateLocation); };
+  }, [socket]);
+
+  if (error) return <main className="p-6"><p>{error}</p><Link className="mt-4 inline-block text-blue-700" to="/home">Return home</Link></main>;
+  if (!ride) return <main className="p-6">Loading ride…</main>;
+  const driver = ride.driver;
+  return <main className="min-h-screen bg-gray-100"><MapView className="h-[50vh]" driverLocation={driver?.location} /><section className="mx-auto -mt-4 max-w-xl rounded-t-3xl bg-white p-5 shadow-xl"><Link to="/home" className="float-right text-sm text-blue-700">Home</Link><h1 className="text-2xl font-bold">Your ride</h1><p className="mt-2 capitalize">Status: <strong>{ride.status.replace("_", " ")}</strong></p>{driver ? <div className="mt-4 rounded-lg bg-gray-100 p-4"><p className="font-semibold">{driver.fullname?.firstname} {driver.fullname?.lastname}</p><p className="text-sm">{driver.vehicle?.color} {driver.vehicle?.vehicleType} · {driver.vehicle?.plate}</p></div> : <p className="mt-4 text-gray-600">We are matching you with a driver.</p>}<div className="mt-5 space-y-2 text-sm"><p><strong>Pickup:</strong> {ride.pickup}</p><p><strong>Destination:</strong> {ride.destination}</p><p><strong>Fare:</strong> ₹{ride.fare}</p>{ride.otp && ["accepted", "arriving"].includes(ride.status) && <p className="rounded bg-yellow-100 p-3 font-semibold">Your OTP: {ride.otp}</p>}</div>{ride.status === "completed" && <p className="mt-5 rounded bg-green-100 p-3 text-green-800">Ride completed. Thank you for riding.</p>}</section></main>;
 };
 
 export default Riding;

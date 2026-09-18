@@ -1,41 +1,38 @@
-import React, { useContext, useEffect, useState } from "react";
-import { UserDataContext } from "../context/UserContext";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { UserDataContext } from "../context/UserContext";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
 
 const UserProtectedWrapper = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("userToken");
   const navigate = useNavigate();
-  const { user, setUser } = useContext(UserDataContext);
+  const { setUser } = useContext(UserDataContext);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!token) {
-      navigate("/login");
+      navigate("/login", { replace: true });
+      return;
     }
-  }, [token]);
 
-  axios
-    .get(`${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/users/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    .then((response) => {
-      if (response.status === 200) {
-        setUser(response.data);
-        setIsLoading(false);
-      }
-    })
-    .catch((error) => {
-      console.log(error);
-      localStorage.removeItem("token");
-      navigate("/login");
-    });
+    let active = true;
+    axios.get(`${API_URL}/api/users/profile`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => {
+        if (active) setUser(data.data.user);
+      })
+      .catch(() => {
+        localStorage.removeItem("userToken");
+        if (active) navigate("/login", { replace: true });
+      })
+      .finally(() => active && setIsLoading(false));
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+    return () => { active = false; };
+  }, [navigate, setUser, token]);
 
-  return <>{children}</>;
+  if (isLoading) return <div className="p-6">Loading your account…</div>;
+  return children;
 };
 
 export default UserProtectedWrapper;

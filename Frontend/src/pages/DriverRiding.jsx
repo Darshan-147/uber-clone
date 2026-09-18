@@ -1,71 +1,55 @@
-import React, { useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import FinishRide from "./FinishRide";
+import { useContext, useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { DriverDataContext } from "../context/DriverContext";
+import { SocketContext } from "../context/SocketContext";
+import MapView from "../components/MapView";
+import ConfirmRidePopUp from "../components/ConfirmRidePopUp";
+import FinishRide from "../components/FinishRide";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
+const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("driverToken")}` });
 
 const DriverRiding = () => {
-  const [finishRidePanel, setFinishRidePanel] = useState(false);
-  const finishRidePanelRef = useRef(null);
+  const navigate = useNavigate();
+  const { driver, updateDriver } = useContext(DriverDataContext);
+  const { socket } = useContext(SocketContext);
+  const [ride, setRide] = useState(null);
+  const [error, setError] = useState("");
+  const [working, setWorking] = useState(false);
 
-  useGSAP(() => {
-    if (finishRidePanel) {
-      gsap.to(finishRidePanelRef.current, {
-        transform: "translateY(0%)",
-      });
-    } else {
-      gsap.to(finishRidePanelRef.current, {
-        transform: "translateY(100%)",
-      });
-    }
-  }, [finishRidePanel]);
+  useEffect(() => {
+    const rideId = localStorage.getItem("activeDriverRide");
+    if (!rideId) { setError("There is no active ride."); return undefined; }
+    axios.get(`${API_URL}/api/rides/${rideId}`, { headers: headers() }).then(({ data }) => setRide(data.data.ride)).catch(() => setError("Could not load this ride."));
+    return undefined;
+  }, []);
 
-  return (
-    <div className="h-screen">
-      <img
-        className="w-16 absolute top-5 left-5"
-        src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
-        alt="Uber Logo"
-      />
-      <Link
-        to="/driver-home"
-        className="fixed top-2 right-2 rounded-full bg-white py-1 px-2"
-      >
-        <i className="ri-logout-box-r-fill"></i>
-      </Link>
+  useEffect(() => {
+    if (!socket) return undefined;
+    const updateRide = ({ ride: updated }) => updated && setRide(updated);
+    socket.on("ride-status-updated", updateRide);
+    socket.on("ride-completed", updateRide);
+    return () => { socket.off("ride-status-updated", updateRide); socket.off("ride-completed", updateRide); };
+  }, [socket]);
 
-      <div className="h-4/5">
-        <img
-          className="h-full w-full object-cover"
-          src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif"
-          alt="Uber map"
-        />
-      </div>
-      <div
-        className="h-1/5 bg-yellow-500 relative flex justify-between items-center"
-        onClick={() => setFinishRidePanel(true)}
-      >
-        <h5
-          onClick={() => {}}
-          className="absolute w-full text-center top-0 text-black font-semibold text-3xl"
-        >
-          <i className="ri-arrow-up-wide-line"></i>
-        </h5>
-        <div className="p-6 flex justify-between items-center w-full">
-          <h4 className="text-xl font-semibold">5 KM away</h4>
-          <button className="bg-green-500 p-3 rounded-lg font-semibold text-white justify-center flex">
-            Complete Ride
-          </button>
-        </div>
-      </div>
-      <div
-        ref={finishRidePanelRef}
-        className="fixed h-screen w-full z-10 bottom-0 bg-white px-3 py-8"
-      >
-        <FinishRide setFinishRidePanel={setFinishRidePanel}/>
-      </div>
-    </div>
-  );
+  const action = async (path, body = {}) => {
+    if (!ride) return;
+    setWorking(true); setError("");
+    try { const { data } = await axios.post(`${API_URL}/api/rides/${ride._id}/${path}`, body, { headers: headers() }); setRide(data.data.ride); return data.data.ride; }
+    catch (requestError) { setError(requestError.response?.data?.error?.message || "Could not update this ride."); return null; }
+    finally { setWorking(false); }
+  };
+
+  const arrive = () => action("arrive");
+  const verify = (otp) => action("verify-otp", { otp });
+  const start = () => action("start");
+  const cancel = async () => { const updated = await action("cancel"); if (updated) { localStorage.removeItem("activeDriverRide"); updateDriver({ ...driver, status: "available" }); navigate("/driver-home"); } };
+  const complete = async () => { const updated = await action("complete"); if (updated) { localStorage.removeItem("activeDriverRide"); updateDriver({ ...driver, status: "available" }); navigate("/driver-home"); } };
+
+  if (error && !ride) return <main className="p-6"><p>{error}</p><button type="button" onClick={() => navigate("/driver-home")} className="mt-4 text-blue-700">Return to driver home</button></main>;
+  if (!ride) return <main className="p-6">Loading ride…</main>;
+  return <main className="min-h-screen bg-gray-100"><MapView className="h-[58vh]" driverLocation={driver?.location} /><section className="mx-auto -mt-4 max-w-xl rounded-t-3xl bg-white p-5 shadow-xl"><h1 className="text-2xl font-bold capitalize">{ride.status.replace("_", " ")}</h1><div className="mt-4 space-y-2 text-sm"><p><strong>Rider:</strong> {ride.user?.fullname?.firstname} {ride.user?.fullname?.lastname}</p><p><strong>Pickup:</strong> {ride.pickup}</p><p><strong>Destination:</strong> {ride.destination}</p><p><strong>Fare:</strong> ₹{ride.fare}</p></div>{error && <p className="mt-4 text-sm text-red-600">{error}</p>}{ride.status === "accepted" && <button type="button" onClick={arrive} disabled={working} className="mt-5 w-full rounded bg-black p-3 font-semibold text-white">{working ? "Updating…" : "I have arrived"}</button>}{ride.status === "arriving" && <div className="mt-5"><ConfirmRidePopUp ride={ride} loading={working} onVerify={verify} onStart={start} onCancel={cancel} /></div>}{ride.status === "in_progress" && <div className="mt-5"><FinishRide onComplete={complete} loading={working} /></div>}</section></main>;
 };
 
 export default DriverRiding;

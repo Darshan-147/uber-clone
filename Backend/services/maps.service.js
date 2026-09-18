@@ -6,6 +6,7 @@ module.exports.getAddressCoordinates = async (address) => {
     throw new Error("Address is required");
   }
   const apiKey = process.env.ORS_MAPS_API;
+  if (!apiKey) throw new Error("Mapping service is not configured");
   const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(
     address
   )}`;
@@ -22,8 +23,7 @@ module.exports.getAddressCoordinates = async (address) => {
       throw new Error("Could not find location for the specified address");
     }
   } catch (error) {
-    console.error(error);
-    throw error;
+    throw new Error("Unable to find that location");
   }
 };
 
@@ -34,6 +34,7 @@ module.exports.getDistanceTime = async (origin, destination) => {
 
   try {
     const apiKey = process.env.ORS_MAPS_API;
+    if (!apiKey) throw new Error("Mapping service is not configured");
 
     // Convert place names to coordinates
     const originCoords = await module.exports.getAddressCoordinates(origin);
@@ -72,11 +73,7 @@ module.exports.getDistanceTime = async (origin, destination) => {
 
     throw new Error("Invalid response format from directions API");
   } catch (error) {
-    console.error("Distance Time Error:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-    });
+    console.error("Distance request failed", { message: error.message, status: error.response?.status });
     throw new Error("Failed to calculate distance and time");
   }
 };
@@ -87,6 +84,7 @@ module.exports.getSuggestions = async (input) => {
   }
 
   const apiKey = process.env.ORS_MAPS_API;
+  if (!apiKey) throw new Error("Mapping service is not configured");
   const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${apiKey}&text=${encodeURIComponent(
     input
   )}`;
@@ -104,11 +102,8 @@ module.exports.getSuggestions = async (input) => {
       throw new Error("Could not find suggestions for the specified input");
     }
   } catch (error) {
-    console.error(
-      "Error fetching suggestions:",
-      error.response?.data || error.message
-    );
-    throw error;
+    console.error("Suggestion request failed", { message: error.message, status: error.response?.status });
+    throw new Error("Unable to find suggestions");
   }
 };
 
@@ -128,7 +123,7 @@ module.exports.getDriversInTheRadius = async (lat, lng, radius) => {
 
     return drivers;
   } catch (error) {
-    console.error("Error fetching drivers in radius:", error.message);
+    console.error("Driver radius search failed", { message: error.message });
     throw new Error("Failed to fetch drivers in the radius");
   }
 };

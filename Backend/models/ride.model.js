@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { RIDE_STATUSES, VEHICLE_TYPES } = require("../utils/ride.constants");
 
 const rideSchema = new mongoose.Schema({
   user: {
@@ -22,9 +23,14 @@ const rideSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  vehicleType: {
+    type: String,
+    enum: VEHICLE_TYPES,
+    required: true,
+  },
   status: {
     type: String,
-    enum: ["pending", "accepted", "completed", "cancelled"],
+    enum: RIDE_STATUSES,
     default: "pending",
   },
   duration: {
@@ -49,6 +55,26 @@ const rideSchema = new mongoose.Schema({
     select: false,
     required: true,
   },
+  otpVerifiedAt: Date,
+  acceptedAt: Date,
+  arrivedAt: Date,
+  startedAt: Date,
+  completedAt: Date,
+  cancelledAt: Date,
+  cancelledBy: { type: String, enum: ["user", "driver"] },
+  rejectedDrivers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Driver" }],
+}, { timestamps: true });
+
+rideSchema.index({ user: 1, createdAt: -1 });
+rideSchema.index({ driver: 1, status: 1, createdAt: -1 });
+rideSchema.index({ status: 1, createdAt: -1 });
+
+rideSchema.set("toJSON", {
+  transform: (document, returned) => {
+    delete returned.otp;
+    delete returned.__v;
+    return returned;
+  },
 });
 
-module.exports = mongoose.model("ride", rideSchema);
+module.exports = mongoose.model("Ride", rideSchema, "rides");

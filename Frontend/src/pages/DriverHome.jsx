@@ -1,153 +1,90 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import RidePopUp from "../components/RidePopUp";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import ConfirmRidePopUp from "../components/ConfirmRidePopUp";
+import { useCallback, useContext, useEffect, useState } from "react";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
 import { DriverDataContext } from "../context/DriverContext";
-import driverImage from "../../assets/images/driverImage.jpeg";
 import { SocketContext } from "../context/SocketContext";
+import MapView from "../components/MapView";
+import RidePopUp from "../components/RidePopUp";
+import uberLogo from "../../assets/images/uber_logo.png";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
+const headers = () => ({ Authorization: `Bearer ${localStorage.getItem("driverToken")}` });
 
 const DriverHome = () => {
-  const [ridePopUp, setRidePopUp] = useState(false);
-  const [confirmRidePopUp, setConfirmRidePopUp] = useState(false);
-  const ridePopUpRef = useRef(null);
-  const confirmRidePopUpRef = useRef(null);
+  const navigate = useNavigate();
+  const { driver, updateDriver } = useContext(DriverDataContext);
+  const { socket, connect } = useContext(SocketContext);
+  const [location, setLocation] = useState(null);
+  const [rideRequest, setRideRequest] = useState(null);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
 
-  const { sendMessage, recieveMessage } = useContext(SocketContext);
-  const { driver } = useContext(DriverDataContext);
+  const publishLocation = useCallback((afterPublish) => {
+    if (!navigator.geolocation || !socket?.connected) return afterPublish?.(new Error("Location or socket connection is unavailable"));
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const point = { lat: coords.latitude, lng: coords.longitude };
+        setLocation(point);
+        socket.emit("update-driver-location", { location: point }, (result) => afterPublish?.(result?.ok ? null : new Error(result?.message)));
+      },
+      () => afterPublish?.(new Error("Location permission is required to go online")),
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 10_000 }
+    );
+  }, [socket]);
 
   useEffect(() => {
-    console.log(driver);
-    sendMessage("join", { userId: driver._id, userType: "driver" });
+    if (!socket || !driver?._id) return undefined;
+    connect();
+    const join = () => socket.emit("join", { token: localStorage.getItem("driverToken"), userType: "driver" });
+    const receivedRide = ({ ride }) => setRideRequest(ride);
+    socket.on("connect", join);
+    socket.on("ride-request", receivedRide);
+    if (socket.connected) join();
+    return () => { socket.off("connect", join); socket.off("ride-request", receivedRide); };
+  }, [connect, driver?._id, socket]);
 
-    const updateLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-          const { latitude, longitude } = position.coords;
-          sendMessage("update-driver-location", {
-            userId: driver._id,
-            location: { lat: latitude, lng: longitude },
-          });
-        });
-      }
-    };
+  useEffect(() => {
+    if (!socket?.connected || !driver?._id) return undefined;
+    publishLocation();
+    const locationInterval = window.setInterval(() => publishLocation(), 15_000);
+    return () => window.clearInterval(locationInterval);
+  }, [driver?._id, publishLocation, socket?.connected]);
 
-    const locationInterval = setInterval(updateLocation(), 1000);
+  const setOnline = () => {
+    setWorking(true); setError("");
+    publishLocation(async (locationError) => {
+      if (locationError) { setError(locationError.message); setWorking(false); return; }
+      try {
+        const { data } = await axios.patch(`${API_URL}/api/drivers/status`, { status: driver.status === "available" ? "offline" : "available" }, { headers: headers() });
+        updateDriver(data.data.driver);
+        socket.emit(data.data.driver.status === "available" ? "driver-online" : "driver-offline");
+      } catch (requestError) { setError(requestError.response?.data?.error?.message || "Could not update availability."); }
+      setWorking(false);
+    });
+  };
 
-    return clearInterval(locationInterval);
-  }, []);
+  const acceptRide = async () => {
+    setWorking(true); setError("");
+    try {
+      const { data } = await axios.post(`${API_URL}/api/rides/${rideRequest._id}/accept`, {}, { headers: headers() });
+      localStorage.setItem("activeDriverRide", data.data.ride._id);
+      updateDriver({ ...driver, status: "busy" });
+      navigate("/driver-riding");
+    } catch (requestError) { setError(requestError.response?.data?.error?.message || "This ride is no longer available."); }
+    finally { setWorking(false); }
+  };
 
-  useGSAP(() => {
-    if (ridePopUp) {
-      gsap.to(ridePopUpRef.current, {
-        transform: "translateY(0%)",
-      });
-    } else {
-      gsap.to(ridePopUpRef.current, {
-        transform: "translateY(100%)",
-      });
-    }
-  }, [ridePopUp]);
+  const rejectRide = async () => {
+    if (!rideRequest) return;
+    setWorking(true);
+    try { await axios.post(`${API_URL}/api/rides/${rideRequest._id}/reject`, {}, { headers: headers() }); setRideRequest(null); }
+    catch (requestError) { setError(requestError.response?.data?.error?.message || "Could not reject this ride."); }
+    finally { setWorking(false); }
+  };
 
-  useGSAP(() => {
-    if (confirmRidePopUp) {
-      gsap.to(confirmRidePopUpRef.current, {
-        transform: "translateY(0%)",
-      });
-    } else {
-      gsap.to(confirmRidePopUpRef.current, {
-        transform: "translateY(100%)",
-      });
-    }
-  }, [confirmRidePopUp]);
-
-  return (
-    <div className="h-screen">
-      <div>
-        <img
-          className="w-16 absolute top-5 left-5"
-          src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
-          alt="Uber Logo"
-        />
-        <Link
-          to="/driver-home"
-          className="fixed top-2 right-2 rounded-full bg-white py-1 px-2"
-        >
-          <i className="ri-logout-box-r-fill"></i>
-        </Link>
-      </div>
-      <div className="h-3/5">
-        <img
-          className="h-full w-full object-cover"
-          src="https://miro.medium.com/v2/resize:fit:1400/0*gwMx05pqII5hbfmX.gif"
-          alt="Uber map"
-        />
-      </div>
-
-      <div className="h-2/5 m-4 flex flex-col gap-5">
-        <div className="flex justify-between items-center">
-          <div>
-            <img
-              className="h-16 w-16 rounded-full object-cover"
-              src={driverImage}
-              alt=""
-            />
-          </div>
-          <div className="flex flex-col items-end">
-            <h4 className="text-xl font-medium">
-              {`${driver?.fullname?.firstname || ""} ${
-                driver?.fullname?.lastname || ""
-              }`}
-            </h4>
-            <h4 className="text-lg font-medium">₹ 300.01</h4>
-            <p className="text-sm font-semibold text-gray-600">Earned</p>
-          </div>
-        </div>
-        <div className="flex justify-around bg-gray-100 rounded-2xl p-2">
-          <div className="text-center">
-            <i className="ri-timer-line text-2xl"></i>
-            <h5 className="font-bold">12.2</h5>
-            <p>Hours Online</p>
-          </div>
-          <div className="text-center">
-            <i className="ri-speed-up-fill text-2xl"></i>
-            <h5 className="font-bold">50 km</h5>
-            <p>Total Distance</p>
-          </div>
-          <div className="text-center">
-            <i className="ri-booklet-line text-2xl"></i>
-            <h5 className="font-bold">20</h5>
-            <p>Notes taken</p>
-          </div>
-        </div>
-        <button
-          className="bg-blue-400 p-3 rounded-lg w-full font-semibold text-white"
-          onClick={() => setRidePopUp(true)}
-        >
-          Check for Rides
-        </button>
-      </div>
-      <div
-        ref={ridePopUpRef}
-        className="fixed w-full z-10 bottom-0 bg-white px-3 py-8"
-      >
-        <RidePopUp
-          setRidePopUp={setRidePopUp}
-          setConfirmRidePopUp={setConfirmRidePopUp}
-        />
-      </div>
-      <div
-        ref={confirmRidePopUpRef}
-        className="fixed h-screen w-full z-10 bottom-0 bg-white px-3 py-8"
-      >
-        <ConfirmRidePopUp
-          setRidePopUp={setRidePopUp}
-          setConfirmRidePopUp={setConfirmRidePopUp}
-        />
-      </div>
-    </div>
-  );
+  return <main className="min-h-screen bg-gray-100"><header className="absolute z-10 flex w-full items-center justify-between p-5"><img className="w-16" src={uberLogo} alt="Uber" /><Link to="/driver-logout" className="rounded bg-white px-3 py-2 shadow">Log out</Link></header><MapView className="h-[55vh]" driverLocation={location || driver?.location} />
+    <section className="mx-auto -mt-4 max-w-xl rounded-t-3xl bg-white p-5 shadow-xl"><div className="flex items-center justify-between"><div><h1 className="text-xl font-bold">{driver?.fullname?.firstname} {driver?.fullname?.lastname}</h1><p className="text-sm text-gray-600">{driver?.vehicle?.color} {driver?.vehicle?.vehicleType} · {driver?.vehicle?.plate}</p></div><span className={`rounded-full px-3 py-1 text-sm font-medium ${driver?.status === "available" ? "bg-green-100 text-green-800" : "bg-gray-200"}`}>{driver?.status || "offline"}</span></div><p className="mt-4 text-sm text-gray-600">Earnings and trip statistics are available after completed rides are recorded.</p>{error && <p className="mt-3 text-sm text-red-600">{error}</p>}<button type="button" onClick={setOnline} disabled={working || driver?.status === "busy"} className="mt-5 w-full rounded-lg bg-black p-3 font-semibold text-white disabled:opacity-60">{driver?.status === "available" ? "Go offline" : driver?.status === "busy" ? "Ride in progress" : "Go online"}</button></section>
+    {rideRequest && <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-xl"><RidePopUp ride={rideRequest} loading={working} onAccept={acceptRide} onReject={rejectRide} onClose={() => setRideRequest(null)} /></div>}</main>;
 };
 
 export default DriverHome;

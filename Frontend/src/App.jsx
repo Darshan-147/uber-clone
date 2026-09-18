@@ -1,4 +1,3 @@
-import React, { useContext } from "react";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import UserSignup from "./pages/UserSignup";
@@ -29,7 +28,7 @@ const App = () => {
         />
         <Route path="/signup" element={<UserSignup />} />
         <Route path="/login" element={<UserLogin />} />
-        <Route path="/riding" element={<Riding />} />
+        <Route path="/riding" element={<UserProtectedWrapper><Riding /></UserProtectedWrapper>} />
         <Route
           path="/logout"
           element={
@@ -48,7 +47,7 @@ const App = () => {
         />
         <Route path="/driver-signup" element={<DriverSignup />} />
         <Route path="/driver-login" element={<DriverLogin />} />
-        <Route path="/driver-riding" element={<DriverRiding/>} />
+        <Route path="/driver-riding" element={<DriverProtectedWrapper><DriverRiding /></DriverProtectedWrapper>} />
         <Route
           path="/driver-logout"
           element={

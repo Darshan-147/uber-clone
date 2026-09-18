@@ -30,10 +30,18 @@ const userSchema = new mongoose.Schema({
   socketId: {
     type: String,
   },
+}, { timestamps: true });
+
+userSchema.set("toJSON", {
+  transform: (document, returned) => {
+    delete returned.password;
+    delete returned.__v;
+    return returned;
+  },
 });
 
 userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ _id: this._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  const token = jwt.sign({ _id: this._id, role: "user" }, process.env.JWT_SECRET, { expiresIn: '24h' });
   return token;
 };
 
@@ -45,6 +53,6 @@ userSchema.statics.hashPassword = async function (password) {
   return await bcrypt.hash(password, 10);
 };
 
-const userModel = mongoose.model("users", userSchema);
+const userModel = mongoose.model("User", userSchema, "users");
 
 module.exports = userModel;

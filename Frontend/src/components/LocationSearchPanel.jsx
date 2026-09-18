@@ -1,5 +1,3 @@
-import React from "react";
-
 const LocationSearchPanel = (props) => {
   return (
     <div className="flex flex-col gap-2 bg-white">

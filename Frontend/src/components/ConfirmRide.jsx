@@ -1,60 +1,38 @@
-import React, { useContext } from "react";
-import { DriverDataContext } from "../context/DriverContext";
+import { useState } from "react";
 
-const ConfirmRide = (props) => {
+const ConfirmRide = ({ pickup, destination, vehicleType, fare, onConfirm, onBack }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const { driver } = useContext(DriverDataContext);
+  const confirm = async () => {
+    setIsSubmitting(true);
+    setError("");
+    try {
+      await onConfirm();
+    } catch (requestError) {
+      setError(requestError.response?.data?.error?.message || "Could not request a ride. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div>
-      <h5
-        onClick={() => {
-          props.setConfirmRidePanel(false);
-        }}
-        className="absolute w-full text-center top-0 text-gray-300 font-semibold text-3xl"
-      >
-        <i className="ri-arrow-down-wide-line"></i>
-      </h5>
-      <h3 className="text-2xl font-semibold mb-5">Confirm Your Ride</h3>
-
-      <div className="flex justify-between">
-        <img
-          className="h-24"
-          src={props.image[props.vehicleType]}
-          alt="UberGo"
-        />
-        <div className="text-right flex justify-center items-center">
-          <h4 className="text-xl font-semibold">Travelling by {props.vehicleType}</h4>
-        </div>
-      </div>
-
-      <div className="flex flex-col justify-between items-center gap-5">
-        <div className="w-full flex flex-col gap-2">
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-map-pin-2-fill"></i>
-            {props.pickup}
-          </div>
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-square-fill"></i>
-            {props.destination}
-          </div>
-          <div className="flex gap-4 border-b-2 border-gray-700 p-3 rounded-md">
-            <i className="ri-bank-card-2-fill"></i>₹{" "}
-            {props.fare[props.vehicleType]} only
-          </div>
-        </div>
-        <button
-          onClick={() => {
-            props.setVehicleFound(true);
-            props.setConfirmRidePanel(false);
-            props.createRide();
-          }}
-          className="bg-green-400 p-3 rounded-lg w-full font-semibold text-white"
-        >
-          Confirm
+    <section className="bg-white p-5 shadow-lg">
+      <h2 className="mb-4 text-xl font-semibold">Confirm your ride</h2>
+      <dl className="space-y-3 text-sm">
+        <div><dt className="text-gray-500">Pickup</dt><dd>{pickup}</dd></div>
+        <div><dt className="text-gray-500">Destination</dt><dd>{destination}</dd></div>
+        <div><dt className="text-gray-500">Vehicle</dt><dd className="capitalize">{vehicleType}</dd></div>
+        <div><dt className="text-gray-500">Estimated fare</dt><dd className="font-semibold">₹{fare?.[vehicleType]}</dd></div>
+      </dl>
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+      <div className="mt-5 flex gap-3">
+        <button type="button" onClick={onBack} disabled={isSubmitting} className="w-1/3 rounded-lg bg-gray-200 p-3 font-semibold">Back</button>
+        <button type="button" onClick={confirm} disabled={isSubmitting} className="w-2/3 rounded-lg bg-black p-3 font-semibold text-white disabled:opacity-60">
+          {isSubmitting ? "Requesting…" : "Confirm ride"}
         </button>
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -1,34 +1,49 @@
-const userModel = require("../models/user.model.js");
-const userService = require("../services/user.service.js");
 const { validationResult } = require("express-validator");
+const userModel = require("../models/user.model");
+const userService = require("../services/user.service");
 const blacklistTokenModel = require("../models/blacklistToken.model");
+
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  secure: process.env.NODE_ENV === "production",
+  maxAge: 24 * 60 * 60 * 1000,
+};
+
+function validationError(req) {
+  const errors = validationResult(req);
+  if (errors.isEmpty()) return null;
+  const error = new Error("Validation failed");
+  error.statusCode = 400;
+  error.details = errors.array();
+  return error;
+}
+
+function sendAuth(res, status, token, user) {
+  res.cookie("token", token, cookieOptions);
+  res.status(status).json({ data: { token, user } });
+}
 
 module.exports.registerUser = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
+    const error = validationError(req);
+    if (error) throw error;
     const { fullname, email, password } = req.body;
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const existingUser = await userModel.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
+    if (await userModel.exists({ email: normalizedEmail })) {
+      const conflict = new Error("Unable to create account with these details");
+      conflict.statusCode = 409;
+      throw conflict;
     }
-
-    const hashedPassword = await userModel.hashPassword(password);
 
     const user = await userService.createUser({
-      firstname: fullname.firstname,
-      lastname: fullname.lastname,
-      email,
-      password: hashedPassword,
+      firstname: fullname.firstname.trim(),
+      lastname: fullname.lastname.trim(),
+      email: normalizedEmail,
+      password: await userModel.hashPassword(password),
     });
-
-    const token = user.generateAuthToken();
-
-    res.status(201).json({ token, user });
+    sendAuth(res, 201, user.generateAuthToken(), user);
   } catch (error) {
     next(error);
   }
@@ -36,43 +51,34 @@ module.exports.registerUser = async (req, res, next) => {
 
 module.exports.loginUser = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const error = validationError(req);
+    if (error) throw error;
+    const user = await userModel.findOne({ email: req.body.email.trim().toLowerCase() }).select("+password");
+    if (!user || !(await user.comparePassword(req.body.password))) {
+      const unauthorized = new Error("Invalid email or password");
+      unauthorized.statusCode = 401;
+      throw unauthorized;
     }
-
-    const { email, password } = req.body;
-    const user = await userModel.findOne({ email }).select("+password");
-
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const isMatch = await user.comparePassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    const token = user.generateAuthToken();
-
-    res.cookie("token", token);
-
-    res.status(200).json({ token, user });
+    sendAuth(res, 200, user.generateAuthToken(), user);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports.getUserProfile = async (req, res, next) => {
-  res.status(200).json(req.user);
-};
+module.exports.getUserProfile = (req, res) => res.json({ data: { user: req.user } });
 
 module.exports.logoutUser = async (req, res, next) => {
-  res.clearCookie("token");
-  const token = req.cookies.token || req.headers.authorization.split(" ")[1];
-
-  await blacklistTokenModel.create({ token });
-
-  res.status(200).json({ message: "Logged Out Successfully" });
+  try {
+    await blacklistTokenModel.updateOne(
+      { token: req.auth.token },
+      { $setOnInsert: { token: req.auth.token } },
+      { upsert: true }
+    );
+    res.clearCookie("token", cookieOptions);
+    res.json({ data: { message: "Logged out" } });
+  } catch (error) {
+    next(error);
+  }
 };
+
+module.exports.validationError = validationError;

@@ -1,3 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.map-view {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.map-view iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.map-marker {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  color: #fff;
+  font-size: .75rem;
+  font-weight: 700;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 5px rgb(0 0 0 / .35);
+}
+
+.map-marker.pickup { background: #15803d; }
+.map-marker.destination { background: #dc2626; }
+.map-marker.driver { background: #2563eb; }
+
+.map-empty {
+  position: absolute;
+  inset: auto 1rem 1rem;
+  z-index: 2;
+  padding: .5rem .75rem;
+  border-radius: .5rem;
+  background: rgb(255 255 255 / .9);
+  font-size: .75rem;
+  text-align: center;
+}

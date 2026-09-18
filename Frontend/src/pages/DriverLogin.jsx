@@ -1,99 +1,42 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { DriverDataContext } from "../context/DriverContext";
 import axios from "axios";
+import { DriverDataContext } from "../context/DriverContext";
+import uberLogo from "../../assets/images/uber_logo.png";
+
+const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:4000";
 
 const DriverLogin = () => {
-  // Two way binding means jo value (e.g.email) me yaha declare kar raha hu wahi value me input tag ke undar use karunga. This is necessary because react won't understand what I am typing otherwise.
-  const [email, setEmail] = useState("shambhu@gmail.com");
-  const [password, setPassword] = useState("Khataro");
-
   const navigate = useNavigate();
+  const { updateDriver } = useContext(DriverDataContext);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const { driver, updateDriver } = useContext(DriverDataContext);
-
-  const submitHandler = async (e) => {
-    e.preventDefault();
-
-    const existingDriver = {
-      email: email,
-      password: password,
-    };
-
-    // To send the response from frontend to backend
-    const response = await axios.post(
-      `${import.meta.env.VITE_BASEAPP_BACKEND_URL}/api/drivers/login`,
-      existingDriver
-    );
-
-    if (response.status === 200) {
-      const data = response.data;
-      console.log("Received driver data:", data.driver); // Debug log
-      updateDriver(data.driver);
-      localStorage.setItem("token", data.token);
+  const submitHandler = async (event) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setError("");
+    try {
+      const { data } = await axios.post(`${API_URL}/api/drivers/login`, { email, password });
+      localStorage.setItem("driverToken", data.data.token);
+      localStorage.removeItem("userToken");
+      updateDriver(data.data.driver);
       navigate("/driver-home");
+    } catch (requestError) {
+      setError(requestError.response?.data?.error?.message || "Unable to sign in.");
+    } finally {
+      setSubmitting(false);
     }
-
-    // reset the form after login
-    setEmail("");
-    setPassword("");
   };
 
-  return (
-    <div className="p-7 h-screen flex flex-col justify-between">
-      <div>
-        <img
-          className="w-14 mb-10"
-          src="https://freelogopng.com/images/all_img/1659761425uber-driver-logo-png.png"
-        ></img>
-        <form
-          onSubmit={(e) => {
-            submitHandler(e);
-          }}
-        >
-          <h3 className="text-lg mb-2">Yo, what's your email?</h3>
-          <input
-            value={email}   // Two way binding
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-            type="email"
-            className="bg-gray-200 rounded px-4 py-2 mb-7 border w-full text-lg placeholder:text-base"
-            placeholder="email@example.com"
-            required
-          />
-          <h3 className="text-lg mb-2">Enter password</h3>
-          <input
-            value={password}   // Two way binding
-            onChange={(e) => {
-              setPassword(e.target.value);
-            }}
-            type="password"
-            className="bg-gray-200 rounded px-4 py-2 mb-7 border w-full text-lg placeholder:text-base"
-            placeholder="password"
-            required
-          />
-          <button className="bg-[#111] text-white font-semibold rounded px-4 py-2 mb-7 border w-full text-lg">
-            Login
-          </button>
-        </form>
-        <p>
-          Join a fleet?{" "}
-          <Link to="/driver-signup" className="text-blue-700">
-            Register as a Driver
-          </Link>{" "}
-        </p>
-      </div>
-      <div>
-        <Link
-          to="/login"
-          className="bg-[#ff8a00] text-white font-semibold rounded px-4 py-2 mb-7 border w-full flex justify-center text-lg"
-        >
-          Sign In as User
-        </Link>
-      </div>
-    </div>
-  );
+  return <main className="flex min-h-screen flex-col justify-between p-7">
+    <div><img className="mb-10 w-14" src={uberLogo} alt="Uber" /><h1 className="mb-6 text-2xl font-bold">Driver sign in</h1>
+      <form onSubmit={submitHandler}><label className="mb-2 block">Email</label><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" className="mb-5 w-full rounded border bg-gray-100 p-3" required /><label className="mb-2 block">Password</label><input value={password} onChange={(event) => setPassword(event.target.value)} type="password" className="mb-5 w-full rounded border bg-gray-100 p-3" required />{error && <p className="mb-4 text-sm text-red-600">{error}</p>}<button disabled={submitting} className="mb-6 w-full rounded bg-black p-3 font-semibold text-white disabled:opacity-60">{submitting ? "Signing in…" : "Sign in"}</button></form>
+      <p>New driver? <Link to="/driver-signup" className="text-blue-700">Register</Link></p></div>
+    <Link to="/login" className="flex justify-center rounded bg-orange-500 p-3 font-semibold text-white">Sign in as a rider</Link>
+  </main>;
 };
 
 export default DriverLogin;

@@ -16,7 +16,7 @@ module.exports.createDriver = async ({
     !password ||
     !color ||
     !plate ||
-    !capacity ||
+    !Number.isInteger(Number(capacity)) || Number(capacity) < 1 ||
     !vehicleType
   ) {
     throw new Error("All fields are required");

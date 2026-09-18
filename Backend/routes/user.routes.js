@@ -3,9 +3,11 @@ const { body } = require("express-validator"); // For validating data coming fro
 const router = express.Router();
 const userController = require("../controllers/user.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
+const authRateLimit = require("../middlewares/auth-rate-limit.middleware");
 
 router.post(
   "/register",
+  authRateLimit,
   [
     body("fullname.firstname")
       .isLength({ min: 3 })
@@ -20,6 +22,7 @@ router.post(
 
 router.post(
   "/login",
+  authRateLimit,
   [
     body("email").isEmail().withMessage("Invalid Email"),
     body("password")
@@ -31,6 +34,6 @@ router.post(
 
 router.get("/profile", authMiddleware.authUser, userController.getUserProfile);
 
-router.get("/logout", authMiddleware.authUser, userController.logoutUser);
+router.post("/logout", authMiddleware.authUser, userController.logoutUser);
 
 module.exports = router;
