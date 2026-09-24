@@ -21,7 +21,7 @@ function validationError(req) {
 }
 
 function sendAuth(res, status, token, driver) {
-  res.cookie("token", token, cookieOptions);
+  res.cookie("driverToken", token, cookieOptions);
   res.status(status).json({ data: { token, driver } });
 }
 
@@ -86,7 +86,7 @@ module.exports.logoutDriver = async (req, res, next) => {
       { upsert: true }
     );
     await driverModel.updateOne({ _id: req.driver._id }, { $set: { status: "offline" }, $unset: { socketId: "" } });
-    res.clearCookie("token", cookieOptions);
+    res.clearCookie("driverToken", cookieOptions);
     res.json({ data: { message: "Logged out" } });
   } catch (error) {
     next(error);

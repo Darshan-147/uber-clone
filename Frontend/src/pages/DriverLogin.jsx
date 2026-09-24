@@ -9,8 +9,8 @@ const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:40
 const DriverLogin = () => {
   const navigate = useNavigate();
   const { updateDriver } = useContext(DriverDataContext);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("driver@gmail.com");
+  const [password, setPassword] = useState("123456");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +21,6 @@ const DriverLogin = () => {
     try {
       const { data } = await axios.post(`${API_URL}/api/drivers/login`, { email, password });
       localStorage.setItem("driverToken", data.data.token);
-      localStorage.removeItem("userToken");
       updateDriver(data.data.driver);
       navigate("/driver-home");
     } catch (requestError) {

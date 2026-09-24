@@ -9,8 +9,8 @@ const API_URL = import.meta.env.VITE_BASEAPP_BACKEND_URL || "http://localhost:40
 const UserLogin = () => {
   const navigate = useNavigate();
   const { setUser } = useContext(UserDataContext);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("user@gmail.com");
+  const [password, setPassword] = useState("123456");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +21,6 @@ const UserLogin = () => {
     try {
       const { data } = await axios.post(`${API_URL}/api/users/login`, { email, password });
       localStorage.setItem("userToken", data.data.token);
-      localStorage.removeItem("driverToken");
       setUser(data.data.user);
       navigate("/home");
     } catch (requestError) {

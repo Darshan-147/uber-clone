@@ -3,14 +3,16 @@ const userModel = require("../models/user.model");
 const driverModel = require("../models/driver.model");
 const blacklistTokenModel = require("../models/blacklistToken.model");
 
-function getToken(req) {
+function getToken(req, expectedRole) {
   const header = req.headers.authorization;
   if (header?.startsWith("Bearer ")) return header.slice(7).trim();
-  return req.cookies?.token;
+  if (expectedRole === "user") return req.cookies?.userToken;
+  if (expectedRole === "driver") return req.cookies?.driverToken;
+  return req.cookies?.userToken || req.cookies?.driverToken || req.cookies?.token;
 }
 
 async function authenticate(req, expectedRole) {
-  const token = getToken(req);
+  const token = getToken(req, expectedRole);
   if (!token) {
     const error = new Error("Authentication is required");
     error.statusCode = 401;

@@ -20,7 +20,7 @@ function validationError(req) {
 }
 
 function sendAuth(res, status, token, user) {
-  res.cookie("token", token, cookieOptions);
+  res.cookie("userToken", token, cookieOptions);
   res.status(status).json({ data: { token, user } });
 }
 
@@ -74,7 +74,7 @@ module.exports.logoutUser = async (req, res, next) => {
       { $setOnInsert: { token: req.auth.token } },
       { upsert: true }
     );
-    res.clearCookie("token", cookieOptions);
+    res.clearCookie("userToken", cookieOptions);
     res.json({ data: { message: "Logged out" } });
   } catch (error) {
     next(error);
