@@ -87,7 +87,7 @@ module.exports.getSuggestions = async (input) => {
   if (!apiKey) throw new Error("Mapping service is not configured");
   const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${apiKey}&text=${encodeURIComponent(
     input
-  )}`;
+  )}&boundary.country=IND`;
 
   try {
     const response = await axios.get(url);
