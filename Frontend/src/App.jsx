@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import Home from "./pages/Home";
+import UserHome from "./pages/UserHome";
 import UserSignup from "./pages/UserSignup";
 import UserLogin from "./pages/UserLogin";
 import DriverSignup from "./pages/DriverSignup";
@@ -22,7 +22,7 @@ const App = () => {
           path="/home"
           element={
             <UserProtectedWrapper>
-              <Home />
+              <UserHome />
             </UserProtectedWrapper>
           }
         />

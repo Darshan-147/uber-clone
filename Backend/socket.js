@@ -16,21 +16,21 @@ function sendMessageToSocketId(socketId, event, payload) {
   if (io && socketId) io.to(socketId).emit(event, payload);
 }
 
-function publicRide(ride) {
+function publicRide(ride, includeOtp = false) {
   if (!ride) return ride;
   const payload = ride.toObject ? ride.toObject({ transform: false }) : { ...ride };
-  delete payload.otp;
+  if (!includeOtp) delete payload.otp;
   delete payload.__v;
   return payload;
 }
 
-function emitRideUpdate(ride, event = "ride-status-updated") {
+function emitRideUpdate(ride, event = "ride-status-updated", includeOtpForUser = false) {
   if (!ride) return;
-  const payload = { ride: publicRide(ride) };
+  const payload = { ride: publicRide(ride, includeOtpForUser) };
   const userSocketId = ride.user?.socketId;
   const driverSocketId = ride.driver?.socketId;
   sendMessageToSocketId(userSocketId, event, payload);
-  sendMessageToSocketId(driverSocketId, event, payload);
+  sendMessageToSocketId(driverSocketId, event, { ride: publicRide(ride) });
 }
 
 async function authenticateJoin(socket, { token, userType }) {
@@ -129,9 +129,8 @@ function initializeSocket(server) {
       try {
         const driverId = requireSocketRole(socket, "driver");
         const ride = await rideService.acceptRide({ rideId, driverId });
-        emitRideUpdate(ride, "ride-accepted");
-        sendMessageToSocketId(ride.user?.socketId, "driver-assigned", { ride });
-        callback?.({ ok: true, ride });
+        emitRideUpdate(ride, "ride-accepted", true);
+        callback?.({ ok: true, ride: publicRide(ride) });
       } catch (error) {
         socketError(socket, error);
         callback?.({ ok: false, message: error.message });
@@ -166,10 +165,7 @@ function initializeSocket(server) {
       const identity = socket.data.identity;
       if (!identity) return;
       const Model = identity.role === "driver" ? driverModel : userModel;
-      await Model.updateOne({ _id: identity.id, socketId: socket.id }, {
-        $unset: { socketId: "" },
-        ...(identity.role === "driver" ? { $set: { status: "offline" } } : {}),
-      });
+      await Model.updateOne({ _id: identity.id, socketId: socket.id }, { $unset: { socketId: "" } });
     });
   });
 }

@@ -64,8 +64,7 @@ module.exports.getFare = async (req, res, next) => {
 module.exports.acceptRide = async (req, res, next) => {
   try {
     const ride = await rideService.acceptRide({ rideId: req.params.rideId, driverId: req.driver._id });
-    emitRideUpdate(ride, "ride-accepted");
-    sendMessageToSocketId(ride.user?.socketId, "driver-assigned", { ride });
+    emitRideUpdate(ride, "ride-accepted", true);
     sendRide(res, 200, ride);
   } catch (error) {
     next(error);

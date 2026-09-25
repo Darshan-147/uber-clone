@@ -55,7 +55,6 @@ async function createRide({ user, pickup, destination, vehicleType }) {
     fare: fare[vehicleType],
     distance: distanceTime.distance.value,
     duration: distanceTime.duration.value,
-    otp: generateOTP(),
   });
 }
 
@@ -98,16 +97,18 @@ async function acceptRide({ rideId, driverId }) {
 
   const ride = await rideModel.findOneAndUpdate(
     { _id: rideId, status: "pending", driver: { $exists: false }, rejectedDrivers: { $ne: driverId } },
-    { $set: { driver: driverId, status: "accepted", acceptedAt: new Date() } },
+    { $set: { driver: driverId, status: "accepted", acceptedAt: new Date(), otp: generateOTP() } },
     { new: true }
-  );
+  ).select("+otp");
 
   if (!ride) {
     await driverModel.updateOne({ _id: driverId, status: "busy" }, { $set: { status: "available" } });
     throw httpError("This ride is no longer available", 409);
   }
 
-  return populateRide(ride);
+  const acceptedRide = await populateRide(ride);
+  console.log("Ride accepted:", acceptedRide.toObject({ transform: false }));
+  return acceptedRide;
 }
 
 async function rejectRide({ rideId, driverId }) {
@@ -196,7 +197,9 @@ async function cancelRide({ rideId, actorId, actorType }) {
 
 async function getRideForActor({ rideId, actorId, actorType }) {
   const query = actorType === "user" ? { _id: rideId, user: actorId } : { _id: rideId, driver: actorId };
-  const ride = await rideModel.findOne(query).populate([
+  const rideQuery = rideModel.findOne(query);
+  if (actorType === "user") rideQuery.select("+otp");
+  const ride = await rideQuery.populate([
     { path: "user", select: "fullname email socketId" },
     { path: "driver", select: "fullname email vehicle location socketId status" },
   ]);
@@ -217,7 +220,7 @@ async function getRideHistory({ actorId, actorType }) {
 async function getRideOtp({ rideId, userId }) {
   const ride = await rideModel.findOne({ _id: rideId, user: userId }).select("+otp");
   if (!ride) throw httpError("Ride not found", 404);
-  if (["completed", "cancelled"].includes(ride.status)) {
+  if (!["accepted", "arriving", "in_progress"].includes(ride.status) || !ride.otp) {
     throw httpError("The ride OTP is no longer available", 409);
   }
   return ride.otp;

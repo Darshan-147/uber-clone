@@ -53,7 +53,6 @@ const rideSchema = new mongoose.Schema({
   otp: {
     type: String,
     select: false,
-    required: true,
   },
   otpVerifiedAt: Date,
   acceptedAt: Date,

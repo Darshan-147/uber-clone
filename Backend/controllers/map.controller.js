@@ -12,7 +12,7 @@ module.exports.getCoordinates = async (req, res, next) => {
     const coordinates = await mapService.getAddressCoordinates(address);
     res.status(200).json(coordinates);
   } catch (err) {
-    console.log("API j nathi mali");
+    console.log("API Not Found");
     res.status(404).json({ message: "Coordinates not found" });
   }
 };

@@ -111,11 +111,7 @@ const Home = () => {
 
   const requestRide = async () => {
     const { data } = await axios.post(`${API_URL}/api/rides/create-ride`, { pickup, destination, vehicleType }, { headers: authHeaders() });
-    let createdRide = data.data.ride;
-    if (!createdRide.otp) {
-      const otpResponse = await axios.get(`${API_URL}/api/rides/${createdRide._id}/otp`, { headers: authHeaders() });
-      createdRide = { ...createdRide, otp: otpResponse.data.data.otp };
-    }
+    const createdRide = data.data.ride;
     setRide(createdRide);
     localStorage.setItem("activeUserRide", createdRide._id);
     setStep("waiting");
@@ -140,8 +136,8 @@ const Home = () => {
         <img className="w-16" src={uberLogo} alt="Uber" />
         <Link to="/logout" className="rounded bg-white px-3 py-2 shadow">Log out</Link>
       </header>
-      <MapView className="h-[42vh]" pickup={pickupPoint} destination={destinationPoint} driverLocation={driverLocation} />
-      <div className="mx-auto -mt-4 max-w-xl rounded-t-3xl bg-white p-5 shadow-xl">
+      <MapView pickup={pickupPoint} destination={destinationPoint} driverLocation={driverLocation} />
+      <div className="mx-auto mt-4 max-w-xl rounded-t-3xl bg-white p-5 shadow-xl">
         {step === "search" && <>
           <h1 className="text-2xl font-bold">Where to?</h1>
           <label className="mt-4 block text-sm font-medium">Pickup</label>
