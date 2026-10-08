@@ -103,15 +103,57 @@ See each application's `.env.example` for the local template. Do not commit actu
 The API is rooted at `/api`: `/users` and `/drivers` handle accounts, `/maps` provides authenticated place and route lookups, and `/rides` handles fares and ride lifecycle operations. The frontend uses bearer JWTs for its Axios requests. Socket.IO authenticates a connection with a JWT and role during the `join` event; ride requests, ride status changes, and driver location updates are then sent to connected clients. The full endpoint list and event payload notes are in the [backend guide](Backend/README.md).
 
 ## Screenshots
+### 1. User Sign-In Page
 
-Screenshots have not yet been added. Add application screenshots here when available.
+<p align="center">
+  <img
+    width="512"
+    height="763"
+    alt="User Sign-In Page"
+    src="https://github.com/user-attachments/assets/4d9491b3-5246-4077-9e27-b81a1937453a"
+  />
+</p>
 
-## Current Gaps
+### 2. Pickup and Drop Destination Selection
 
-- There is no payment provider integration, deployment configuration, or frontend automated test suite in the repository.
-- Driver matching is a one-time notification attempt when a ride is created; there is no persistent dispatch queue or retry workflow.
-- The map view embeds OpenStreetMap and overlays markers; it does not provide turn-by-turn navigation or a plotted route line.
-- Driver ride history is available through the API, but there is no ride-history screen in the frontend.
-- The backend test suite currently covers ride utility logic and model/token behavior, not full HTTP or database integration.
+<p align="center">
+  <img
+    width="536"
+    height="766"
+    alt="User choosing pickup and drop destination"
+    src="https://github.com/user-attachments/assets/ea31f802-6b5b-4c58-959e-bd5eeea3aee2"
+  />
+</p>
 
-No root `LICENSE` file is present; licensing needs confirmation before redistribution.
+### 3. Fare Calculation
+
+<p align="center">
+  <img
+    width="534"
+    height="763"
+    alt="Fare calculation"
+    src="https://github.com/user-attachments/assets/946678cf-2980-4efb-8c90-393e3fc76fdb"
+  />
+</p>
+
+### 4. Ride Creation
+
+<p align="center">
+  <img
+    width="530"
+    height="764"
+    alt="Ride creation"
+    src="https://github.com/user-attachments/assets/577b7ca2-62b6-4c91-91f3-e1a67532f1cb"
+  />
+</p>
+
+### 5. Driver Searching for Rides
+
+<p align="center">
+  <img
+    width="511"
+    height="765"
+    alt="Driver searching for rides"
+    src="https://github.com/user-attachments/assets/1a80a682-3dd3-40cc-89f2-988c34fdb9c2"
+  />
+</p>
